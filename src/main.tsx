@@ -1,3 +1,5 @@
+// Validate environment configuration before anything else runs (P1-T09).
+import './lib/env'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
