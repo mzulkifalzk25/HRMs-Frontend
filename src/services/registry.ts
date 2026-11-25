@@ -14,6 +14,12 @@ import type { Role } from '@/features/authentication/types'
 import { createHttpDashboardService } from '@/features/dashboard/api/dashboard.http'
 import { createMockDashboardService } from '@/features/dashboard/api/dashboard.mock'
 import type { DashboardService } from '@/features/dashboard/api/dashboard.service'
+import { createHttpEmployeeService } from '@/features/employees/api/employee.http'
+import { createMockEmployeeService } from '@/features/employees/api/employee.mock'
+import type { EmployeeService } from '@/features/employees/api/employee.service'
+import { createHttpOrganizationService } from '@/features/organization/api/organization.http'
+import { createMockOrganizationService } from '@/features/organization/api/organization.mock'
+import type { OrganizationService } from '@/features/organization/api/organization.service'
 import { env } from '@/lib/env'
 import { apiClient, type HttpClient } from '@/services/api'
 import { createHttpHealthService } from '@/services/health/health.http'
@@ -38,6 +44,8 @@ export type Services = {
   health: HealthService
   auth: AuthService
   dashboard: DashboardService
+  employees: EmployeeService
+  organization: OrganizationService
 }
 
 export function createServices(options: {
@@ -70,6 +78,8 @@ export function createServices(options: {
       health: createMockHealthService({ latencyMs }),
       auth: createMockAuthService({ latencyMs }),
       dashboard: createMockDashboardService({ latencyMs }),
+      employees: createMockEmployeeService({ latencyMs }),
+      organization: createMockOrganizationService({ latencyMs }),
     }
   }
   return {
@@ -78,6 +88,8 @@ export function createServices(options: {
     health: createHttpHealthService(options.client),
     auth: createHttpAuthService(options.client),
     dashboard: createHttpDashboardService(options.client),
+    employees: createHttpEmployeeService(options.client),
+    organization: createHttpOrganizationService(options.client),
   }
 }
 

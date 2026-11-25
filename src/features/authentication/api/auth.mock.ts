@@ -6,6 +6,7 @@
 // (the real app restores sessions through the httpOnly refresh cookie, D-079).
 import { ApiError } from '@/services/api'
 import { DEFAULT_MOCK_LATENCY_MS, simulateLatency } from '@/services/mock/latency'
+import { setMockViewer } from '@/services/mock/mock-session'
 import type { AuthSession, Role, TokenCheck, User } from '../types'
 import type { AuthService } from './auth.service'
 
@@ -107,6 +108,7 @@ export function createMockAuthService(options: { latencyMs?: number } = {}): Aut
   let tokenCounter = 0
 
   const issue = (account: MockAccount): AuthSession => {
+    setMockViewer({ id: account.id, role: account.role })
     tokenCounter += 1
     return { user: toUser(account), accessToken: `mock-access-${account.role}-${tokenCounter}` }
   }
@@ -149,6 +151,7 @@ export function createMockAuthService(options: { latencyMs?: number } = {}): Aut
     async logout() {
       await simulateLatency(latency)
       current = null // the mock equivalent of blacklisting the refresh token (D-078)
+      setMockViewer(null)
     },
 
     async restoreSession() {
