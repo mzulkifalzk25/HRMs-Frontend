@@ -4,6 +4,17 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 
+// jsdom lacks ResizeObserver, which Radix popper-based components (tooltip, dropdown) use
+// for positioning. Real browsers have it; a no-op stub is enough for behaviour tests.
+if (typeof globalThis.window !== 'undefined' && !('ResizeObserver' in globalThis)) {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub
+}
+
 afterEach(() => {
   cleanup()
 })
