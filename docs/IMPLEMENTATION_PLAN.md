@@ -20,7 +20,7 @@
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
 | Working tree | P1-T01…T09 committed (latest `da4cd14`). Uncommitted: P1-T10…T17 work and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
 | Mock mode | Not yet implemented |
-| Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
+| Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
 ### Blockers
 - None blocking Phase 1. P1-T18 needs a manual browser check by the user.
@@ -42,6 +42,7 @@ Update this section at the end of every session.
 - Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
 - Check whether the user did the P1-T18 manual visual check (desktop ≥1024 px, mobile ~375 px); record the result.
 - Next: **Phase 2** starting with P2-T01. Token handling is decided (D-078, D-079); ask the user about Q-AUTH-01…04 (password, invitation, session timeout) before building those rules.
+- Frontend focus (D-080): no backend work. Keep `docs/API_INTEGRATION.md` updated with the endpoints each phase's HTTP services call; make mocks realistic (in-memory state, 4xx errors, latency).
 - Patterns to reuse: services via `src/services/registry.ts`; pages use `PageHeader`, `ErrorState` + `userMessage()`, skeletons, `EmptyState`; times via `src/lib/datetime.ts` only; routes get `handle: { breadcrumb }`; add nav items in `src/app/navigation.ts` (switch planned → available).
 - Testing notes: jsdom has no `ResizeObserver` (stubbed in `src/test/setup.ts`); use `renderRoutes`/`renderWithProviders` from `src/test/render.tsx`.
 - `pnpm preview` needs env vars set (production builds refuse missing values, D-076): e.g. create `.env.production.local` from `.env.example`.
