@@ -83,7 +83,7 @@ pnpm dev          # start the Vite dev server
 pnpm typecheck    # tsc -b (TypeScript 7, strict)
 pnpm lint         # oxlint (D-033)
 pnpm build        # typecheck + production build
-pnpm preview      # serve the production build
+pnpm preview      # serve the production build (needs env vars: production builds refuse missing values, D-076)
 pnpm format       # Prettier --write (format:check to verify); ignores src/components/ui/ and *.md
 pnpm test         # Vitest (jsdom); also test:watch, test:coverage
 pnpm test:tz      # whole suite with TZ=America/Los_Angeles (timezone independence)
@@ -93,7 +93,7 @@ pnpm test:tz      # whole suite with TZ=America/Los_Angeles (timezone independen
 
 **UI components (shadcn/ui, D-037):** add primitives with `pnpm shadcn add <name>` and only when a task needs them. Afterwards, diff `src/index.css` and `package.json`. **Never run `shadcn init`**: it overwrites the design tokens in `src/index.css` (verified in a dry run). Do not hand-edit generated files in `src/components/ui/` beyond token-related fixes; wrap them instead.
 
-Environment (`.env.example`, D-025):
+Environment (`.env.example`, D-025, D-076). Read values via `env` from `@/lib/env`, never `import.meta.env` directly. For local overrides copy `.env.example` to `.env.local` (gitignored); never commit real `.env` files:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000/api/v1

@@ -14,11 +14,11 @@
 |---|---|
 | Overall state | Phase 1 in progress. Toolchain complete: Vite + React + TS 7, Tailwind v4 tokens, shadcn/ui (Radix), core libraries, Vitest, oxlint, Prettier. All checks pass. |
 | Current phase | Phase 1: Project foundation |
-| Current task | P1-T08 done. |
-| Next task | P1-T09: typed environment module + `.env.example` |
+| Current task | P1-T09 done. |
+| Next task | P1-T10: centralized typed API client |
 | Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | P1-T01…T07 committed. Uncommitted: P1-T08 (`.oxlintrc.json`, `docs/ARCHITECTURE.md`, doc updates). Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
+| Working tree | P1-T01…T08 committed (`3de0df9`, `25f8e0c` added for P1-T08). Uncommitted: P1-T09 env files and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
 
@@ -39,7 +39,8 @@ Update this section at the end of every session.
 
 - Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
 - Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
-- Next: **P1-T09** (typed env module with Zod in `src/lib/env.ts`, `.env.example`, confirm `.env*` ignored). Follow `docs/ARCHITECTURE.md` for file placement and naming.
+- Next: **P1-T10** (central typed HTTP client in `src/services/api/`: base URL from `env.apiBaseUrl`, JSON, auth-header injection point, timeout/abort, normalized `ApiError`, refresh-on-401 hook as typed stub — real token handling BLOCKED by Q-TECH-01). Use native `fetch` (R-016, ask before adding axios). Tests with mocked `fetch`.
+- `pnpm preview` needs env vars set (production builds refuse missing values, D-076): e.g. create `.env.production.local` from `.env.example`.
 - Before finishing a task, run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
 - Testing notes: Vitest returns `''` for CSS imports (even `?raw`) — read files with `node:fs` in a `// @vitest-environment node` test. No Vitest globals: import `describe/it/expect` explicitly. Tailwind skips test files via `@source not` in `src/index.css`.
 - `@tanstack/react-table` agent-skills approval is **pending the user's decision** (R-020). Do not run `pnpm approve`.
@@ -170,7 +171,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
 **Dependencies:** Phase 0 complete.
-**Status:** In progress (P1-T01–T08 done; next P1-T09).
+**Status:** In progress (P1-T01–T09 done; next P1-T10).
 
 ### Tasks and subtasks
 
@@ -196,10 +197,10 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 - [x] **P1-T07** Lint and format: oxlint (react, react-hooks, jsx-a11y, typescript; D-033), Prettier; scripts wired. (2026-11-25: prettier 3.10.1; `.prettierrc.json` = no semicolons, single quotes, trailing commas, 100 cols, LF; `.prettierignore` excludes `src/components/ui/` (shadcn-generated), `*.md`, lockfile, build/coverage output. Scripts `format`, `format:check`. Initial run reformatted 4 files, line wrapping only.)
 - [x] **P1-T08** Create folder structure per architecture: `src/app/{router,providers,layouts,guards}`, `src/components/{ui,shared,tables,forms,charts,feedback}`, `src/features/{authentication,dashboard,employees,attendance,leaves,approvals,organization,imports,reports,notifications,audit,settings}`, `src/services/{api,auth,mock}`, `src/hooks`, `src/lib`, `src/types`, `src/constants`, `src/styles`. (2026-11-25, D-075: Git cannot track empty folders and placeholder files are forbidden, so the structure is defined in `docs/ARCHITECTURE.md` and each folder is created by the task that first adds a real file. Import boundaries enforced by oxlint: no mock imports outside the service layer, components may not import features, no cycles.)
   - [x] Empty folders get only what is needed (no speculative files). (No empty folders or `.gitkeep` files created.)
-- [ ] **P1-T09** Environment configuration.
-  - [ ] Typed env module validating `VITE_API_BASE_URL` and `VITE_USE_MOCK_API` with Zod; fails clearly if invalid.
-  - [ ] `.env.example` with `VITE_API_BASE_URL=http://localhost:8000/api/v1` and `VITE_USE_MOCK_API=true`.
-  - [ ] Confirm `.env` / `.env.local` are ignored by Git.
+- [x] **P1-T09** Environment configuration. (2026-11-25, D-076.)
+  - [x] Typed env module validating `VITE_API_BASE_URL` and `VITE_USE_MOCK_API` with Zod; fails clearly if invalid. (`src/lib/env.ts`: pure `parseEnv()` + validated `env` export; `EnvError` lists every issue; http(s) URLs only, trailing slashes removed; boolean must be exactly `"true"`/`"false"`. Missing values default only outside production; production builds with missing values throw at startup. Imported first in `src/main.tsx`. Types in `src/types/vite-env.d.ts`. 16 tests.)
+  - [x] `.env.example` with `VITE_API_BASE_URL=http://localhost:8000/api/v1` and `VITE_USE_MOCK_API=true`.
+  - [x] Confirm `.env` / `.env.local` are ignored by Git. (`git check-ignore`: `.env`, `.env.local`, `.env.development`, `.env.production` ignored; `.env.example` not ignored.)
 - [ ] **P1-T10** Centralized typed API client.
   - [ ] Base URL, JSON handling, auth header injection point, timeout/abort support.
   - [ ] Normalized `ApiError` type (status, code, message, field errors).
@@ -642,6 +643,8 @@ Append entries; do not rewrite history.
 | 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Added `chore:` commit type (D-039) |
 | 2026-11-25 | P1-T08 | `docs/ARCHITECTURE.md` | created | Folder map, dependency rules, service pattern, naming, deviations |
 | 2026-11-25 | P1-T08 | `.oxlintrc.json`, `CLAUDE.md`, `docs/DECISIONS.md` | modified | Import-boundary and no-cycle lint rules; links to ARCHITECTURE.md; D-075 |
+| 2026-11-25 | P1-T09 | `src/lib/env.ts`, `src/lib/env.test.ts`, `src/types/vite-env.d.ts`, `.env.example` | created | Typed env module, tests, env types, example file |
+| 2026-11-25 | P1-T09 | `src/main.tsx`, `tsconfig.test.json`, `CLAUDE.md`, `docs/DECISIONS.md` | modified | Env validated at startup; test tsconfig includes `src/types`; preview note; D-076, R-021 |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -689,6 +692,10 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `oxlint --rules` | `eslint/no-restricted-imports` and `import/no-cycle` available | P1-T08 |
 | 2026-11-25 | Boundary probe (scratchpad project) with the final repo `.oxlintrc.json` | Blocked: 6 violations (feature→`@/services/mock/*`, relative and nested; feature→`./x.mock`, `../api/x.mock`; component→feature); cycle a↔b reported. Allowed: `src/services/registry.ts`, `src/services/api/*`, `*.mock.ts`, `*.test.ts`. First attempt missed nested paths (`*` vs `**`), fixed | P1-T08 |
 | 2026-11-25 | `pnpm lint`, `pnpm format:check` on repo after P1-T08 | Exit 0 | P1-T08 |
+| 2026-11-25 | `git check-ignore -v .env .env.local .env.development .env.production`; `git check-ignore .env.example` | First four ignored; `.env.example` not ignored; no `.env` files exist | P1-T09 |
+| 2026-11-25 | `vitest run src/lib/env.test.ts` | 16/16 pass first run (valid, missing dev/prod, empty-as-missing, 5 invalid booleans, 4 invalid URLs incl. `javascript:`, combined errors) | P1-T09 |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:tz`, `build` (after P1-T09) | All exit 0; 52/52 tests in both runs | P1-T09 |
+| 2026-11-25 | `pnpm build` without env; and with `VITE_API_BASE_URL=https://hr.example.test/api/v1 VITE_USE_MOCK_API=false` | No-env bundle contains the production check; env bundle inlines the configured URL | P1-T09 (runtime throw itself covered by unit tests, not run in a browser) |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -705,3 +712,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T06: Vitest + Testing Library + jsdom; 36 tests incl. token contrast guard and TZ run | P1-T06 | None | P1-T07 |
 | 2026-11-25 | P1-T07: Prettier configured; toolchain complete (P1-T02 closed) | P1-T07, P1-T02 | None | P1-T08 |
 | 2026-11-25 | P1-T08: architecture guide + lint-enforced import boundaries (no empty folders) | P1-T08 | None | P1-T09 |
+| 2026-11-25 | P1-T09: validated env module (dev defaults, strict production) + `.env.example` | P1-T09 | None | P1-T10 |
