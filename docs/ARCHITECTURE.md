@@ -38,7 +38,7 @@ src/
 │   └── index.ts             Public API of the feature (what other folders may import)
 ├── services/
 │   ├── api/                 Central typed HTTP client, ApiError, request helpers
-│   ├── auth/                Session/token handling (strategy pending Q-TECH-01)
+│   ├── auth/                Session/token handling (D-078/D-079: access token in memory, refresh via httpOnly cookie)
 │   ├── mock/                Shared mock infrastructure: latency simulation now; in-memory store, fictional seed data later
 │   ├── health/              System health service (reference implementation of the service pattern)
 │   └── registry.ts          Picks HTTP or mock implementation per domain from VITE_USE_MOCK_API

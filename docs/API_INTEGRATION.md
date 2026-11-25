@@ -30,7 +30,7 @@
 | File uploads | `multipart/form-data` via `FormData` (content type set by the browser) |
 | Empty responses | `204`/`205` or an empty body → `undefined` |
 | Response validation | Each service validates responses with a Zod schema; a mismatch becomes `invalid_response` |
-| Credentials | `same-origin` by default (may change with Q-TECH-01) |
+| Credentials | `same-origin` by default; auth calls will use `include` for the httpOnly refresh cookie (D-079, Phase 2) |
 
 **Proposed** conventions for the backend:
 
@@ -62,7 +62,7 @@
 |---|---|---|
 | 0 | `network_error` / `timeout` / `aborted` | Retry allowed for network/timeout; aborted is silent |
 | 400 | `bad_request`, or `validation_error` when field errors are present | Field errors shown next to inputs |
-| 401 | `unauthorized` | Refresh once, then retry; otherwise session expired (Open: Q-TECH-01) |
+| 401 | `unauthorized` | Refresh once (cookie, rotation), then retry; otherwise session expired → login (D-079) |
 | 403 | `forbidden` | Permission message; never retried |
 | 404 | `not_found` | Not-found state |
 | 409 | `conflict` | "Changed by someone else" (concurrent approvals, D-069) |
@@ -74,7 +74,29 @@ Messages from `ApiError` are shown to users, so the backend must keep `detail`/`
 
 ## 4. Authentication
 
-**Open** (Q-TECH-01 token storage and refresh, Q-AUTH-*). Implemented hooks only:
+**Confirmed (D-078, D-079):** JWT authentication. The **access token** lives only in memory; the **refresh token** is an **httpOnly, Secure, SameSite cookie** set by Django. Refresh tokens **rotate** on every refresh and the old one is blacklisted; logout blacklists the current one.
+**Open:** password, invitation and session-timeout rules (Q-AUTH-01…04).
+
+**Proposed** flow (endpoint names to be fixed with the backend in P2-T20):
+
+| Step | Frontend | Backend |
+|---|---|---|
+| Login | `POST` login endpoint with credentials (`auth: false`, cookies included) | Returns the access token in the JSON body; sets the refresh token as an httpOnly cookie |
+| Page reload | One refresh call (cookie) before showing protected routes | Returns a new access token and a rotated refresh cookie |
+| API calls | `Authorization: Bearer <access>` | Validates the access token |
+| Access token expired | On `401`: one shared refresh call (cookie), then retry once | Issues a new access token, rotates the refresh cookie, blacklists the old refresh token; rejects blacklisted/expired ones |
+| Logout | `POST` logout endpoint (cookie), then **always** clear the in-memory token and query cache and go to login, even if the call fails | Blacklists the refresh token and clears the cookie |
+| Refresh fails | `onSessionExpired()` → login with return path | — |
+
+Backend requirements that follow from this design:
+
+- Keep access-token lifetimes short: blacklisting covers refresh tokens, so an access token stays valid until it expires.
+- Cookie: `HttpOnly`, `Secure` (except local HTTP development), `SameSite=Lax` or `Strict`, path limited to the auth endpoints where possible.
+- The frontend (`localhost:5173`) and API (`localhost:8000`) are different origins: allow credentialed CORS for the exact frontend origin only (never `*`), and the frontend sends `credentials: 'include'` on refresh/logout/login.
+- Protect refresh and logout against CSRF (Django CSRF token header and/or SameSite plus a custom header).
+- With rotation, two browser tabs refreshing at once can race (the second uses a just-blacklisted token). The frontend will coordinate refreshes across tabs in Phase 2; a short grace period on the backend is an alternative to discuss.
+
+Implemented hooks only:
 
 - `Authorization: Bearer <access token>` is added when a token provider is installed.
 - On `401`, the client calls one shared `refreshSession()` and retries the request once; if refresh fails, `onSessionExpired()` runs.

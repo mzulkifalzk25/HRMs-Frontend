@@ -15,7 +15,7 @@
 | Overall state | Phase 1 implementation complete: toolchain, env, API client, service registry, Karachi time helpers, providers/router, app shell, feedback components, mock badge, README + API doc. 158 tests; all checks pass, also from a clean copy. |
 | Current phase | Phase 1: Project foundation (awaiting manual visual check) |
 | Current task | P1-T18: manual visual check of the shell (user) |
-| Next task | Phase 2 — P2-T01 (auth types and schemas). Phase 2 is partly blocked by Q-TECH-01 and Q-AUTH-* |
+| Next task | Phase 2 — P2-T01 (auth types and schemas). Token handling decided (D-078, D-079); Q-AUTH-01…04 still open |
 | Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
 | Working tree | P1-T01…T09 committed (latest `da4cd14`). Uncommitted: P1-T10…T17 work and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
@@ -24,7 +24,7 @@
 
 ### Blockers
 - None blocking Phase 1. P1-T18 needs a manual browser check by the user.
-- Phase 2 HTTP-mode session handling is blocked by Q-TECH-01 (token storage); password/invitation/session rules by Q-AUTH-01…04.
+- Phase 2 token handling is decided (D-078, D-079). Password, invitation and session-timeout rules are still open (Q-AUTH-01…04).
 - Several later tasks are blocked by open questions; see section D and `docs/DECISIONS.md` (Q-IDs).
 
 ### Unresolved issues
@@ -41,7 +41,7 @@ Update this section at the end of every session.
 - Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
 - Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
 - Check whether the user did the P1-T18 manual visual check (desktop ≥1024 px, mobile ~375 px); record the result.
-- Next: **Phase 2** starting with P2-T01. Before HTTP-mode auth work, ask the user to answer Q-TECH-01 (token storage) and Q-AUTH-01…04. Mock-mode auth can proceed.
+- Next: **Phase 2** starting with P2-T01. Token handling is decided (D-078, D-079); ask the user about Q-AUTH-01…04 (password, invitation, session timeout) before building those rules.
 - Patterns to reuse: services via `src/services/registry.ts`; pages use `PageHeader`, `ErrorState` + `userMessage()`, skeletons, `EmptyState`; times via `src/lib/datetime.ts` only; routes get `handle: { breadcrumb }`; add nav items in `src/app/navigation.ts` (switch planned → available).
 - Testing notes: jsdom has no `ResizeObserver` (stubbed in `src/test/setup.ts`); use `renderRoutes`/`renderWithProviders` from `src/test/render.tsx`.
 - `pnpm preview` needs env vars set (production builds refuse missing values, D-076): e.g. create `.env.production.local` from `.env.example`.
@@ -131,7 +131,7 @@ Confirmed access principles:
 
 ### D6. Security requirements
 - No secrets in Git. `.env.example` with placeholders only.
-- Token storage/refresh strategy is an open decision (Q-TECH-01); do not implement real-mode token persistence before it is answered.
+- Token strategy decided (D-078, D-079): access token in memory only, refresh token in an httpOnly cookie with rotation; never store tokens in localStorage/sessionStorage.
 - Frontend guards are UX only; document that the backend enforces authorization.
 - Validate uploads client-side for UX; backend must revalidate.
 - No `dangerouslySetInnerHTML` with unsanitized data. Escape/neutralize spreadsheet formula injection on exports (cells beginning with `=`, `+`, `-`, `@`).
@@ -248,7 +248,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 **Objectives:** Complete authentication UX against mock services, role-based routing, and six role dashboards.
 **Dependencies:** Phase 1 complete.
 **Status:** Not started.
-**Open items touching this phase:** Q-TECH-01 (token storage and refresh), Q-AUTH-* (password policy, invitation expiry, session timeout).
+**Open items touching this phase:** Q-AUTH-* (password policy, invitation expiry, session timeout). Token handling decided: D-078, D-079.
 
 ### Tasks and subtasks
 
@@ -257,15 +257,15 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
   - [ ] Login, logout, current user (`me`), forgot password, reset password, invitation/set-password, token refresh (interface).
   - [ ] Mock accounts: one per role, fictional, clearly labelled.
 - [ ] **P2-T03** Session handling (mock mode).
-  - [ ] In-memory session for mock mode only unless Q-TECH-01 is answered.
-  - [ ] HTTP-mode token persistence and refresh implementation **BLOCKED by Q-TECH-01**.
+  - [ ] In-memory session for mock mode (HTTP mode follows D-079: access token in memory, refresh cookie).
+  - [ ] HTTP-mode session per D-078/D-079 (no longer blocked): access token in memory; refresh via httpOnly cookie with rotation; restore session on reload with one refresh call; `credentials: 'include'` on auth calls; coordinate refreshes across tabs (BroadcastChannel/Web Locks).
 - [ ] **P2-T04** Login page: validation, error states, loading state, no account enumeration in messages, no public signup link.
 - [ ] **P2-T05** Forgot password and reset password pages (token from URL; invalid/expired token states).
 - [ ] **P2-T06** Invitation / set-password page (token-based; expiry rules BLOCKED by Q-AUTH-02 for specific values, UI states for expired/invalid still built).
 - [ ] **P2-T07** Route guards: authenticated guard, role guard, redirect-to-login with return path, forbidden (403) page, not-found page. Documented as UX only.
 - [ ] **P2-T08** Role-based post-login redirect to each role's dashboard.
 - [ ] **P2-T09** Current-user profile page (read-only basics for now; edit fields decided in Phase 3).
-- [ ] **P2-T10** Logout (clears session and cached queries; confirmation not required).
+- [ ] **P2-T10** Logout (clears session and cached queries; confirmation not required). Per D-078: call the backend logout endpoint so the token is blacklisted, then clear the local session even if that call fails.
 - [ ] **P2-T11** Role-aware navigation: sidebar items per role (only modules that exist so far; others hidden, not dead links).
 - [ ] **P2-T12** Dashboard data services (mock) with typed interfaces per dashboard.
 - [ ] **P2-T13** HR dashboard: total employees, present today, absent today, late arrivals, pending leave requests, department overview, attendance trends (Recharts), recent activity.
@@ -291,7 +291,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 - Direct URL access to another role's dashboard shows 403 (UX guard) and docs state the backend is authoritative.
 - Forgot/reset/invitation flows work against mocks with all token states.
 - No tokens or passwords in logs; no secrets in repo.
-- HTTP-mode token behavior is not implemented until Q-TECH-01 is answered.
+- HTTP-mode token behavior follows D-078/D-079 (access token in memory, httpOnly refresh cookie, rotation, logout blacklist).
 
 ### Deliverables
 - Auth feature, guards, six dashboards, role-aware navigation, updated API docs.
@@ -601,7 +601,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 #### Security hardening
 - [ ] **P9-T08** Dependency audit (`pnpm audit`) with results recorded; address or document findings.
-- [ ] **P9-T09** Token storage/refresh implementation per the answer to Q-TECH-01 (BLOCKED until answered); XSS review; Content Security Policy guidance documented.
+- [ ] **P9-T09** Token storage/refresh implementation per D-078/D-079 (review in hardening); XSS review; Content Security Policy guidance documented.
 - [ ] **P9-T10** Review that no secrets, tokens or personal data appear in code, mocks, logs or docs.
 - [ ] **P9-T11** Verify all frontend guards are documented as UX-only and that no business-critical decision relies on frontend-only enforcement.
 

@@ -5,7 +5,8 @@
 // - Optional Zod schema validates responses at the API boundary.
 // - Timeout + caller AbortSignal; every failure becomes an ApiError.
 // - Auth hooks: access-token injection and refresh-on-401 with a single shared refresh.
-//   Real token storage/refresh is BLOCKED by Q-TECH-01; hooks stay unset until Phase 2.
+//   Token strategy (D-078/D-079): access token in memory, refresh via httpOnly cookie with rotation;
+//   the hooks are wired up by the auth feature in Phase 2.
 // - Never logs requests, tokens or bodies.
 import type { ZodType } from 'zod'
 import { ApiError, apiErrorFromResponse } from './api-error'

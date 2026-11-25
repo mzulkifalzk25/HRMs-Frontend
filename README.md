@@ -60,7 +60,7 @@ Before finishing a change: `pnpm typecheck && pnpm lint && pnpm format:check && 
 - Every domain has a typed service interface with two implementations: HTTP (`*.http.ts`) and mock (`*.mock.ts`). `src/services/registry.ts` picks one set based on `VITE_USE_MOCK_API`; screens never change.
 - In mock mode a **"Mock data"** badge is always visible in the top bar. Mock data is fictional.
 - Lint blocks importing mock modules from screens or components.
-- The HTTP client (`src/services/api/`) normalizes every failure into an `ApiError`, validates responses with Zod, supports timeouts and cancellation, and has refresh-on-401 hooks (token storage is still an open decision, Q-TECH-01).
+- The HTTP client (`src/services/api/`) normalizes every failure into an `ApiError`, validates responses with Zod, supports timeouts and cancellation, and has refresh-on-401 hooks. Sessions use JWT: access token in memory, refresh token in an httpOnly cookie with rotation, blacklisted on logout (wired up in Phase 2).
 - Frontend role checks are for user experience only; the backend is authoritative for authentication, permissions and business rules.
 - API conventions and endpoints: [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md).
 
