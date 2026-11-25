@@ -162,6 +162,11 @@ GET employees/?page=2&page_size=25&search=demo&department=eng&status=active&stat
 | `dashboard/associate-pm/` | GET | `DashboardService.getAssociatePmDashboard` | Associate PM dashboard | Proposed |
 | `dashboard/team-lead/` | GET | `DashboardService.getTeamLeadDashboard` | Team Lead dashboard | Proposed |
 | `dashboard/employee/` | GET | `DashboardService.getEmployeeDashboard` | Employee dashboard | Proposed |
+| `employees/` | GET, POST | `EmployeeService.list`, `.create` | Employee directory, Add employee | Proposed (implemented and tested) |
+| `employees/{id}/` | GET, PATCH | `EmployeeService.get`, `.update` | Employee profile, Edit employee | Proposed |
+| `employees/{id}/deactivate/`, `employees/{id}/activate/` | POST | `EmployeeService.deactivate`, `.activate` | Employee profile (HR) | Proposed |
+| `employees/reporting-lines/` | GET | `OrganizationService.listReportingLines` | Org chart, manager pickers, profile names | Proposed |
+| `departments/`, `designations/`, `teams/`, `projects/` (+ `{id}/`) | GET, POST, PATCH | `OrganizationService.*` | Organization page, filters, forms | Proposed |
 
 `GET health/`: public (no auth). Response:
 
@@ -170,6 +175,59 @@ GET employees/?page=2&page_size=25&search=demo&department=eng&status=active&stat
 ```
 
 `status` is `"ok"` or `"degraded"`.
+
+### Employees and organization (Phase 3)
+
+**Scope (enforced by the backend, D-044, D-085):** HR sees everyone; a Manager their direct and indirect reports; a Team Lead their teams; a Senior/Associate PM the teams and members of their projects; an Employee has no directory (`403` on `GET employees/`) and may read only their own record. A record outside the caller's scope answers **`404`**, not `403`, so its existence is not revealed. All writes are HR-only (`403` otherwise).
+
+`GET employees/` query parameters: `page`, `page_size` (10/25/50), `search` (name, email, employee code), `department`, `team`, `role`, `status` (`invited`/`active`/`inactive`), `manager` (direct reports of that id), `ordering` (`last_name`, `joining_date`, `employee_code`, with `-` for descending). Response: DRF page (§5) of list items:
+
+```json
+{
+  "id": "e-103",
+  "employee_code": "FBX-1009",
+  "first_name": "Bilal",
+  "last_name": "Rana",
+  "email": "bilal.rana@formbaxhr.test",
+  "role": "employee",
+  "status": "active",
+  "department_name": "Engineering",
+  "designation_title": "Senior Software Engineer",
+  "manager_names": ["Imran Demo", "Farah Demo"],
+  "joining_date": "2020-10-12"
+}
+```
+
+`GET employees/{id}/` (and the response of POST/PATCH/activate/deactivate):
+
+```json
+{
+  "id": "e-103",
+  "employee_code": "FBX-1009",
+  "first_name": "Bilal",
+  "last_name": "Rana",
+  "email": "bilal.rana@formbaxhr.test",
+  "phone": null,
+  "role": "employee",
+  "department_id": "d-eng",
+  "designation_id": "g-sse",
+  "joining_date": "2020-10-12",
+  "status": "active",
+  "manager_ids": ["u-mgr-001", "u-spm-001"],
+  "team_ids": ["t-fe"],
+  "project_ids": ["p-portal", "p-mobile"],
+  "deactivation_reason": null
+}
+```
+
+- **Create** (`POST employees/`): body has the fields above except `id`, `employee_code`, `status`, `deactivation_reason`. The backend assigns `employee_code` (provisional, Q-ORG-01), sets `status: "invited"` and emails an invitation (P2-T06 flow). No password is sent.
+- **Update** (`PATCH employees/{id}/`): **only changed fields** are sent (the backend records before/after in the audit log). Lists (`manager_ids`, `team_ids`, `project_ids`) replace the whole list.
+- **Deactivate** (`POST employees/{id}/deactivate/` with `{ "reason": "…" }`): reason required (provisional, Q-ORG-03). **Activate** (`POST …/activate/`): back to `active`, or `invited` if the person never activated. Nothing is deleted.
+- **Validation errors** (`400`, DRF field errors) the UI shows in place: `email` (already exists), `department_id` / `designation_id` (must be active), `manager_ids` (inactive manager, self-reporting, or **reporting loop**, e.g. `"This would create a reporting loop: A → B → A."`), `team_ids`, `project_ids`, `role` (HR cannot change their own role, provisional Q-ORG-05). Changing your own status is refused.
+
+`GET employees/reporting-lines/` (all signed-in roles, provisional): `[{ "id", "name", "designation", "department_name", "role", "status", "manager_ids" }]` for the org chart and pickers.
+
+Organization resources (`departments/`, `designations/`, `teams/`, `projects/`): `GET` lists all (with `headcount` for departments/designations, `member_ids` for teams); `POST` creates; `PATCH {id}/` updates, and `PATCH {id}/ { "status": "inactive" }` deactivates (never delete). Rules the UI relies on: names/codes unique (`400` on `name`/`title`/`code`); teams have `department_id`, optional `team_lead_id`, and `member_ids` set as a whole list (updates each employee's teams); projects have `code`, optional `senior_pm_id` / `associate_pm_id` (must hold those roles, `400` otherwise) and `team_ids`.
 
 ### Dashboards (P2-T12)
 
@@ -196,4 +254,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: employees and organization (P3-T15), attendance (P4-T14), leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+Further endpoints are added per phase: attendance (P4-T14), leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.

@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1 and 2 implemented: foundation plus authentication (login, password reset, invitations, JWT session per D-078/D-079, guards) and six role dashboards in mock mode. 289 tests; all checks pass. |
-| Current phase | Phase 2 complete; Phase 3 next. Manual visual checks of Phases 1–2 pending (user). |
-| Current task | User review: manual browser check of the shell (P1-T18) and Phase 2 screens |
-| Next task | Phase 3 — P3-T01 (employee and organization types). Blocked items: Q-ORG-01…05, Q-LEAVE-11, Q-APPR-04 |
-| Branch | `phase-2-auth-dashboards` (created 2026-11-25 from `phase-1-foundation` @ `d0dba27`; D-034). Neither phase branch is merged or pushed. |
+| Overall state | Phases 1–3 implemented in mock mode: foundation, authentication and role dashboards, employees and organization (directory, profiles, create/edit/deactivate, departments, designations, teams, projects, reporting hierarchy, org chart). 374 tests; all checks pass. |
+| Current phase | Phase 3 complete (PR into `dev-main` open); Phase 4 next after the user merges. |
+| Current task | User review and merge of the Phase 3 PR; manual browser checks pending |
+| Next task | Phase 4 — P4-T01 (attendance types). Blocked items: Q-ATT-01…07 |
+| Branch | `phase-3-employees-organization` (from `dev-main` @ `0dea658`, published; PR into `dev-main`). Phases 1–2 merged into `dev-main` (PRs #1, #2). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 2 committed on `phase-2-auth-dashboards` (see `git log`). Verify with `git status`. |
+| Working tree | Phase 3 committed and pushed (see `git log`). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -38,14 +38,13 @@
 
 Update this section at the end of every session.
 
-- Start by following the session start protocol in `CLAUDE.md` §2. Check PR status (`gh pr list --base dev-main`). Phase 3 starts only after the user has merged the Phase 1 and Phase 2 PRs: then update `dev-main` and create `phase-3-employees-organization` from it, publish it, and open its PR when done (`CLAUDE.md` §9, D-083).
-- Ask whether the user did the manual browser checks (P1-T18 shell; Phase 2 login, dashboards, mobile width) and record results.
-- Next: **Phase 3** (employees and organization), P3-T01. Ask the user about Q-ORG-01…05 (employee fields/ID format, single vs multi-company, deactivation rules, multiple teams, HR self-edit) before building those rules; also Q-LEAVE-11 / Q-APPR-04 for reporting relations.
-- Frontend focus (D-080): no backend work. Keep `docs/API_INTEGRATION.md` updated with each phase's endpoints; mocks realistic (in-memory state, 4xx errors, latency); every mock response must pass its Zod schema (see `dashboard-services.test.ts`).
-- Patterns: services via `src/services/registry.ts` (add the domain to `Services` + both branches); screens via TanStack Query hooks; `PageHeader`, `SectionCard`, `StatCard`, `StatusBadge`, `EmptyState`, `ErrorState` + `userMessage()`; forms with `FormField` + Zod + React Hook Form (`useWatch`, not `watch`); times only via `src/lib/datetime.ts`; routes in `createAppRoutes` with `handle: { breadcrumb }` and `RequireRole`; nav items in `src/app/navigation.ts` with `roles`; lazy-load heavy pages.
-- Testing: `renderApp(path, { signedInAs })` (fresh mock auth per test) and `withSignedInUser` from `src/test/render.tsx`; mock latency is 0 under Vitest; jsdom has no ResizeObserver (stubbed).
-- Respect pnpm's `minimumReleaseAge`; do not approve the pending `@tanstack/react-table` agent skills (R-020).
-- Commit messages per `CLAUDE.md` §8. Do not commit or push unless asked.
+- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 4 starts only after the user has merged the Phase 3 PR: update `dev-main`, create `phase-4-attendance`, publish it.
+- Ask about Q-ATT-01…07 (checkout before 17:45, definition of absent, multiple sessions per day, correction rules, holidays/weekends, forgotten checkout, location) before building those rules; also Q-ORG-01…05 if still provisional (D-084).
+- Phase 4 builds on: `src/lib/datetime.ts` (Karachi helpers, ms precision), `services/mock/hr-store.ts` (extend with attendance state; keep server-like checks), `services/mock/mock-session.ts` (viewer), dashboards' check-in shell (P2-T18 → P4-T04).
+- Patterns: registry-reachable modules (schemas, contracts, `*.http.ts`, `*.mock.ts`, pure lib) import other features' **pure modules directly**, never their `index.ts` (index re-exports pages → registry → import cycle; lint catches it). Shared form controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`. Server-side tables: `PaginationBar`, URL-held query state (see `employees/lib/directory-params.ts`), TanStack Table v9 core without client processing.
+- Effects that set form errors must depend on stable values (strings), never on arrays/objects rebuilt each render (Phase 3 render-loop bug).
+- Testing: `renderApp(path, { signedInAs })`; the setup resets the mock HR store and viewer after each test; jsdom renders both desktop table and mobile list (scope queries with `within(table)`); jsdom has no `matchMedia` (treated as small screen). Run long suites with `timeout` and `--testTimeout`.
+- Frontend focus (D-080); commit per `CLAUDE.md` §8; never merge PRs.
 
 ---
 
@@ -297,27 +296,27 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Employee directory/profile CRUD and organization structure against mock services.
 **Dependencies:** Phase 2 complete.
-**Status:** Not started.
-**Open items touching this phase:** Q-ORG-* (employee ID format, required fields), Q-LEAVE-11 (Associate PM authorization mechanism), Q-APPR-04 (role mapping).
+**Status:** Complete (2026-11-25): P3-T01…T15 implemented and verified in mock mode on `phase-3-employees-organization`. Not visually checked in a browser.
+**Open items touching this phase:** Q-ORG-01…05 handled provisionally in `features/employees/lib/employee-policy.ts` (D-084); Q-LEAVE-11 / Q-APPR-04 / Q-APPR-05 still open (affect Phase 5).
 
 ### Tasks and subtasks
 
-- [ ] **P3-T01** Types and Zod schemas: `Employee`, `Department`, `Team`, `Designation`, `Project`, `ReportingRelation`, `EmploymentStatus`.
-  - [ ] Supports multiple managers per employee and employees with no manager.
-- [ ] **P3-T02** `EmployeeService`, `OrganizationService` interfaces with mock and HTTP implementations.
-- [ ] **P3-T03** Employee directory (TanStack Table): server-style pagination, sorting, filtering (department, team, role, status, manager), search; mobile-friendly rendering.
-- [ ] **P3-T04** Employee profile page: personal/work info, department, designation, role, joining date, employment status, managers, teams, projects.
-- [ ] **P3-T05** Create employee (HR only in UX): validated form; triggers invitation (mock) rather than setting passwords.
-- [ ] **P3-T06** Edit employee with change-tracking payload suitable for audit (before/after captured by backend; frontend sends only changed fields).
-- [ ] **P3-T07** Activate/deactivate employee with confirmation dialog and reason field if required (reason requirement **BLOCKED by Q-ORG-03**; build the dialog so the reason field is configurable).
-- [ ] **P3-T08** Department management (list, create, edit, deactivate).
-- [ ] **P3-T09** Team management (list, create, edit, members, team lead assignment).
-- [ ] **P3-T10** Designation management.
-- [ ] **P3-T11** Project management and employee–project/team relationships.
-- [ ] **P3-T12** Reporting hierarchy management: assign/remove one or more managers; detect and block circular reporting; allow no-manager state.
-- [ ] **P3-T13** Organizational chart view (tree/graph) with large-tree handling, keyboard navigation, mobile fallback (list view).
-- [ ] **P3-T14** Scope-aware views: Manager/Team Lead/Senior PM/Associate PM see their authorized scope (mocked scope rules; defined as UX only; real scoping by backend).
-- [ ] **P3-T15** Update `API_INTEGRATION.md` and begin backend specification notes for `employees` and `organization` apps (models, constraints, deletion behavior: prefer deactivation over deletion).
+- [x] **P3-T01** Types and Zod schemas: `Employee`, `Department`, `Team`, `Designation`, `Project`, `ReportingRelation`, `EmploymentStatus`. (`features/employees/schemas/employee.schema.ts`, `features/organization/schemas/organization.schema.ts`; types inferred from Zod; statuses invited/active/inactive; `src/types/api.ts` page envelope.)
+  - [x] Supports multiple managers per employee and employees with no manager.
+- [x] **P3-T02** `EmployeeService`, `OrganizationService` interfaces with mock and HTTP implementations. (Contracts, HTTP (snake_case bodies, DRF pagination) and mocks over the shared in-memory store `src/services/mock/hr-store.ts`, which emulates the server: scoping by viewer, 403/404/400, cycle and duplicate checks.)
+- [x] **P3-T03** Employee directory (TanStack Table): server-style pagination, sorting, filtering (department, team, role, status, manager), search; mobile-friendly rendering. (TanStack Table v9 on desktop, card list on mobile; search (debounced), department/team/role/status/manager filters, sortable name/ID/joined with `aria-sort`, page sizes 10/25/50; all state in the URL.)
+- [x] **P3-T04** Employee profile page: personal/work info, department, designation, role, joining date, employment status, managers, teams, projects. (`/employees/:id`; names resolved; several managers; "No manager (leave requests go to HR)"; 404 state for unknown/out-of-scope ids.)
+- [x] **P3-T05** Create employee (HR only in UX): validated form; triggers invitation (mock) rather than setting passwords. (`/employees/new`; status `invited`; backend assigns the code (provisional Q-ORG-01); mock-mode toast says no email is sent.)
+- [x] **P3-T06** Edit employee with change-tracking payload suitable for audit (before/after captured by backend; frontend sends only changed fields). (`lib/employee-diff.ts`: only changed fields, ids compared as sets; "No changes to save" when nothing changed.)
+- [x] **P3-T07** Activate/deactivate employee with confirmation dialog and reason field if required (reason requirement **BLOCKED by Q-ORG-03**; build the dialog so the reason field is configurable). (Reason required provisionally (`EMPLOYEE_POLICY`, Q-ORG-03); reactivation returns never-activated accounts to `invited`; not offered on your own record.)
+- [x] **P3-T08** Department management (list, create, edit, deactivate). (Organization page, Departments tab: create/edit/deactivate; unique names; headcounts; warning when people are still assigned.)
+- [x] **P3-T09** Team management (list, create, edit, members, team lead assignment). (Teams tab: department, optional team lead, members set as a whole list.)
+- [x] **P3-T10** Designation management. (Designations tab.)
+- [x] **P3-T11** Project management and employee–project/team relationships. (Projects tab: Senior PM / Associate PM (must hold those roles), teams; employee–project/team links in the employee form.)
+- [x] **P3-T12** Reporting hierarchy management: assign/remove one or more managers; detect and block circular reporting; allow no-manager state. (`features/organization/lib/hierarchy.ts`: `findReportingCycle` (names the loop), `transitiveReports`; live preview blocks saving; backend re-checks.)
+- [x] **P3-T13** Organizational chart view (tree/graph) with large-tree handling, keyboard navigation, mobile fallback (list view). (`/organization/chart`: ARIA tree with roving tabindex (arrows, Home/End, Enter/Space), collapsed below level 2, search keeps the manager chain, show-inactive toggle; list view grouped by manager is the default below 768 px.)
+- [x] **P3-T14** Scope-aware views: Manager/Team Lead/Senior PM/Associate PM see their authorized scope (mocked scope rules; defined as UX only; real scoping by backend). (Mock store scopes like the backend should: HR all; Manager transitive reports; Team Lead their teams; Senior/Associate PM their projects' teams; Employee only self (no directory, 403). Out-of-scope ids answer 404.)
+- [x] **P3-T15** Update `API_INTEGRATION.md` and begin backend specification notes for `employees` and `organization` apps (models, constraints, deletion behavior: prefer deactivation over deletion). (`docs/API_INTEGRATION.md` §6 employees/organization endpoints. Backend specification stays in P9-T12 per D-080.)
 
 ### Required tests
 - Schemas and form validation (required fields, email format, joining date).
@@ -664,6 +663,10 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P2 | `src/components/forms/*`, `src/components/shared/{stat-card,section-card,status-badge,user-avatar}.tsx`, `src/components/ui/{label,card}.tsx` | created | Form field/password input, dashboard building blocks, shadcn label/card |
 | 2026-11-25 | P2 | `src/app/guards/*`, `src/app/layouts/auth-layout.tsx`, `src/app/router/{routes.tsx,forbidden-page.tsx}`, `src/app/navigation.ts`, `src/app/layouts/{app-layout.tsx,shell/sidebar-nav.tsx,shell/user-menu.tsx}`, app tests, `src/test/{render.tsx,setup.ts}` | created/modified | Guards, auth layout, route factory with lazy dashboards, role-aware nav, real account menu; old shell test replaced |
 | 2026-11-25 | P2 | `.oxlintrc.json` | modified | `jsx-a11y/prefer-tag-over-role` off (ARIA roles kept deliberately, D-082) |
+| 2026-11-25 | P3 | `src/features/employees/**`, `src/features/organization/**` | created | Schemas, policy, diff, URL params, hierarchy lib, services (+http, mock), hooks, components, pages, tests |
+| 2026-11-25 | P3 | `src/services/mock/{hr-store,mock-session}.ts` (+test), `src/services/registry.ts`, `src/features/authentication/api/auth.mock.ts` | created/modified | Shared mock HR backend, viewer, registry wiring |
+| 2026-11-25 | P3 | `src/components/forms/{native-select,checkbox-list,server-errors}.tsx?`, `src/components/tables/pagination-bar.tsx`, `src/components/ui/{tabs,textarea,dialog,table}.tsx`, `src/hooks/use-media-query.ts`, `src/types/api.ts` | created | Shared controls and primitives |
+| 2026-11-25 | P3 | `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/layouts/shell/global-search.tsx`, `src/app/app-shell.test.tsx`, `src/test/setup.ts` | modified | Lazy Phase 3 routes, nav items, working global search, store reset in tests |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -736,6 +739,14 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `vitest run src/app src/features` | First 4 failures: 2 wrong test assertions; lazy route needs waitFor; reset/invite pages used the global `services.auth` instead of the session's service (design flaw) → service exposed via auth context → 146/146 | P2 |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (Phase 2) | All exit 0; 22 files / 289 tests; 3 × 289 in timezone runs. Build: dashboards split into own chunks (HR chunk with Recharts 413.85 kB / 117.58 kB gzip); main chunk 737.09 kB / 230.34 kB gzip, still above Vite's 500 kB warning (R-022, P9-T06) | P2 acceptance |
 | 2026-11-25 | Dev server `curl` of `/`, `/login`, `/forgot-password`, `/reset-password?token=…`, `/invite?token=…`, `/dashboard/hr`, `/profile` and key modules | All 200; no errors in log; server stopped. Not a visual check | P2 |
+| 2026-11-25 | `git fetch`, `dev-main` fast-forward to `0dea658` (PRs #1, #2 merged); `phase-3-employees-organization` created and pushed | Baseline typecheck/lint/test/build pass | Phase 3 start (D-083) |
+| 2026-11-25 | `shadcn add select checkbox tabs textarea dialog table` | No CSS/package changes; `select` and `checkbox` later removed as unused (native controls chosen) | P3 |
+| 2026-11-25 | `vitest run src/features/organization` (hierarchy) | 11/11 first run (self, direct, multi-level, second-manager cycles; transitive reports; tree with multi-manager and cyclic data) | P3-T12/T13 |
+| 2026-11-25 | `pnpm lint` after services | `import/no-cycle`: schemas imported `ROLES` from `@/features/authentication` index → registry cycle; fixed by importing `authentication/types` directly | Architecture rule recorded |
+| 2026-11-25 | `vitest run src/services/mock` (HR store) | 21/23 first run: two wrong expectations (next code FBX-1021; Engineering headcount 11) → 23/23 | P3-T02/T14 |
+| 2026-11-25 | `vitest run` employee + organization pages | Run hung >400 s. Cause: reporting-loop `useEffect` depended on a new array each render → infinite re-render (real bug); also duplicate "Search" accessible names (real a11y bug: directory vs global search) and a test needing table scoping. Fixed: effect depends on message string; labels "Search employees"/"Search people"; global search made functional | P3 bug fixes |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (Phase 3) | All exit 0; 28 files / 374 tests; 3 × 374 in timezone runs. Main chunk 488.09 kB / 152.01 kB gzip (below Vite's 500 kB warning now); every Phase 3 page its own chunk | P3 acceptance |
+| 2026-11-25 | Dev server `curl` of `/employees`, `/employees/new`, `/employees/e-103`, `/employees/e-103/edit`, `/organization`, `/organization/chart` | All 200; no errors; server stopped. Not a visual check | P3 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -755,3 +766,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T09: validated env module (dev defaults, strict production) + `.env.example` | P1-T09 | None | P1-T10 |
 | 2026-11-25 | P1-T10…T17 implemented and verified (also from a clean copy); P1-T18 automated part done | P1-T10–T17 | P1-T18 manual browser check pending (no browser available) | User visual check, then Phase 2 |
 | 2026-11-25 | Phase 2 implemented and verified: auth (login, reset, invitations, JWT session D-078/D-079, cross-tab), guards, role nav, six dashboards; tests found and fixed a redirect race and a service-instance flaw | P2-T01…T20 | Manual browser checks pending (user); Q-AUTH-01…04 provisional (D-081) | Phase 3 (Q-ORG-* first) |
+| 2026-11-25 | Phase 3 implemented and verified: employees directory/profile/create/edit/deactivate, organization management, reporting hierarchy with cycle checks, org chart, scope-aware mock backend; tests found a render loop and duplicate field names (fixed) | P3-T01…T15 | Q-ORG-01…05 provisional (D-084); manual browser checks pending | Phase 4 after PR merge |

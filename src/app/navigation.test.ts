@@ -5,10 +5,25 @@ import { ROLES } from '@/features/authentication'
 import { navigationForRole, type NavSection } from './navigation'
 
 describe('navigationForRole', () => {
-  it.each(ROLES)('%s sees their own dashboard and profile, nothing unbuilt', (role) => {
+  const EXPECTED: Record<(typeof ROLES)[number], string[]> = {
+    hr_admin: ['Dashboard', 'Employees', 'Org chart', 'Organization', 'My profile'],
+    manager: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
+    senior_pm: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
+    associate_pm: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
+    team_lead: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
+    // Employees have no directory: they see only their own record (D-044).
+    employee: ['Dashboard', 'Org chart', 'My profile'],
+  }
+
+  it.each(ROLES)('%s sees only the modules that exist for their role', (role) => {
     const items = navigationForRole(role).flatMap((section) => section.items)
-    expect(items.map((item) => item.label)).toEqual(['Dashboard', 'My profile'])
+    expect(items.map((item) => item.label)).toEqual(EXPECTED[role])
     expect(items[0]?.to).toMatch(/^\/dashboard\//)
+  })
+
+  it('shows the Administration section to HR only', () => {
+    expect(navigationForRole('hr_admin').map((s) => s.title)).toContain('Administration')
+    expect(navigationForRole('manager').map((s) => s.title)).not.toContain('Administration')
   })
 
   it('filters by role and drops empty sections', () => {

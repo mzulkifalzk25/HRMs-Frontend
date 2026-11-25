@@ -52,6 +52,90 @@ const DASHBOARD_PAGES: Record<Role, LazyPage> = {
   }),
 }
 
+const lazyPage =
+  <M,>(load: () => Promise<M>, pick: (module: M) => ComponentType): LazyPage =>
+  async () => ({ Component: pick(await load()) })
+
+const EMPLOYEE_PAGES = {
+  directory: lazyPage(
+    () => import('@/features/employees/pages/employee-directory-page'),
+    (m) => m.EmployeeDirectoryPage,
+  ),
+  create: lazyPage(
+    () => import('@/features/employees/pages/employee-create-page'),
+    (m) => m.EmployeeCreatePage,
+  ),
+  profile: lazyPage(
+    () => import('@/features/employees/pages/employee-profile-page'),
+    (m) => m.EmployeeProfilePage,
+  ),
+  edit: lazyPage(
+    () => import('@/features/employees/pages/employee-edit-page'),
+    (m) => m.EmployeeEditPage,
+  ),
+}
+const ORGANIZATION_PAGES = {
+  manage: lazyPage(
+    () => import('@/features/organization/pages/organization-page'),
+    (m) => m.OrganizationPage,
+  ),
+  chart: lazyPage(
+    () => import('@/features/organization/pages/org-chart-page'),
+    (m) => m.OrgChartPage,
+  ),
+}
+
+/** Roles with a directory (employees only see their own record via /profile, D-044). */
+export const DIRECTORY_ROLES: readonly Role[] = [
+  'hr_admin',
+  'manager',
+  'senior_pm',
+  'associate_pm',
+  'team_lead',
+]
+
+/** Phase 3 routes (UX guards only; the API enforces scope and HR-only changes, D-027). */
+function employeeAndOrganizationRoutes(): RouteObject[] {
+  return [
+    {
+      path: 'employees',
+      handle: crumb('Employees'),
+      children: [
+        {
+          element: <RequireRole allow={DIRECTORY_ROLES} />,
+          children: [{ index: true, lazy: EMPLOYEE_PAGES.directory }],
+        },
+        {
+          element: <RequireRole allow={['hr_admin']} />,
+          children: [{ path: 'new', lazy: EMPLOYEE_PAGES.create, handle: crumb('Add employee') }],
+        },
+        {
+          path: ':employeeId',
+          handle: crumb('Employee'),
+          children: [
+            { index: true, lazy: EMPLOYEE_PAGES.profile },
+            {
+              element: <RequireRole allow={['hr_admin']} />,
+              children: [{ path: 'edit', lazy: EMPLOYEE_PAGES.edit, handle: crumb('Edit') }],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      path: 'organization',
+      handle: crumb('Organization'),
+      children: [
+        {
+          element: <RequireRole allow={['hr_admin']} />,
+          children: [{ index: true, lazy: ORGANIZATION_PAGES.manage }],
+        },
+        { path: 'chart', lazy: ORGANIZATION_PAGES.chart, handle: crumb('Org chart') },
+      ],
+    },
+  ]
+}
+
 /** Each role dashboard is visible only to that role (UX only; the API scopes the data, D-027). */
 function dashboardRoutes(): RouteObject[] {
   return (Object.keys(DASHBOARD_PATHS) as Role[]).map((role) => ({
@@ -103,6 +187,7 @@ export function createAppRoutes(
               children: [
                 { index: true, element: <RoleHomeRedirect /> },
                 ...dashboardRoutes(),
+                ...employeeAndOrganizationRoutes(),
                 { path: 'profile', element: <ProfilePage />, handle: crumb('My profile') },
                 { path: '*', element: <NotFoundPage />, handle: crumb('Not found') },
               ],
