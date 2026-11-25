@@ -38,7 +38,7 @@
 
 Update this section at the end of every session.
 
-- Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-2-auth-dashboards` (or a Phase 3 branch created from it).
+- Start by following the session start protocol in `CLAUDE.md` §2. Check PR status (`gh pr list --base dev-main`). Phase 3 starts only after the user has merged the Phase 1 and Phase 2 PRs: then update `dev-main` and create `phase-3-employees-organization` from it, publish it, and open its PR when done (`CLAUDE.md` §9, D-083).
 - Ask whether the user did the manual browser checks (P1-T18 shell; Phase 2 login, dashboards, mobile width) and record results.
 - Next: **Phase 3** (employees and organization), P3-T01. Ask the user about Q-ORG-01…05 (employee fields/ID format, single vs multi-company, deactivation rules, multiple teams, HR self-edit) before building those rules; also Q-LEAVE-11 / Q-APPR-04 for reporting relations.
 - Frontend focus (D-080): no backend work. Keep `docs/API_INTEGRATION.md` updated with each phase's endpoints; mocks realistic (in-memory state, 4xx errors, latency); every mock response must pass its Zod schema (see `dashboard-services.test.ts`).
