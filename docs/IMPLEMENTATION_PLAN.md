@@ -12,14 +12,14 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1–3 implemented in mock mode: foundation, authentication and role dashboards, employees and organization (directory, profiles, create/edit/deactivate, departments, designations, teams, projects, reporting hierarchy, org chart). 374 tests; all checks pass. |
-| Current phase | Phase 3 complete (PR into `dev-main` open); Phase 4 next after the user merges. |
-| Current task | User review and merge of the Phase 3 PR; manual browser checks pending |
-| Next task | Phase 4 — P4-T01 (attendance types). Blocked items: Q-ATT-01…07 |
-| Branch | `phase-3-employees-organization` (from `dev-main` @ `0dea658`, published; PR into `dev-main`). Phases 1–2 merged into `dev-main` (PRs #1, #2). |
+| Overall state | Phases 1–4 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance (check-in/out, history, calendar, team and organization records, HR corrections with audit history, CSV export, live dashboards). 428 tests; all checks pass. |
+| Current phase | Phase 4 complete (PR into `dev-main` open); Phase 5 next after the user merges. |
+| Current task | User review and merge of the Phase 4 PR; manual browser checks pending |
+| Next task | Phase 5 — P5-T01 (leave types). Open: Q-LEAVE-*, Q-APPR-*; Q-ATT-01…07 still provisional (D-086) |
+| Branch | `phase-4-attendance` (from `dev-main` @ `79797cd`, published; PR into `dev-main`). Phases 1–3 merged into `dev-main` (PRs #1, #2, #3). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 3 committed and pushed (see `git log`). Verify with `git status`. |
-| Mock mode | Not yet implemented |
+| Working tree | Phase 4 committed and pushed (see `git log`). Verify with `git status`. |
+| Mock mode | Implemented: all services run on in-memory mocks (`VITE_USE_MOCK_API=true`), "Mock data" badge in the top bar |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
 ### Blockers
@@ -38,12 +38,12 @@
 
 Update this section at the end of every session.
 
-- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 4 starts only after the user has merged the Phase 3 PR: update `dev-main`, create `phase-4-attendance`, publish it.
-- Ask about Q-ATT-01…07 (checkout before 17:45, definition of absent, multiple sessions per day, correction rules, holidays/weekends, forgotten checkout, location) before building those rules; also Q-ORG-01…05 if still provisional (D-084).
-- Phase 4 builds on: `src/lib/datetime.ts` (Karachi helpers, ms precision), `services/mock/hr-store.ts` (extend with attendance state; keep server-like checks), `services/mock/mock-session.ts` (viewer), dashboards' check-in shell (P2-T18 → P4-T04).
-- Patterns: registry-reachable modules (schemas, contracts, `*.http.ts`, `*.mock.ts`, pure lib) import other features' **pure modules directly**, never their `index.ts` (index re-exports pages → registry → import cycle; lint catches it). Shared form controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`. Server-side tables: `PaginationBar`, URL-held query state (see `employees/lib/directory-params.ts`), TanStack Table v9 core without client processing.
-- Effects that set form errors must depend on stable values (strings), never on arrays/objects rebuilt each render (Phase 3 render-loop bug).
-- Testing: `renderApp(path, { signedInAs })`; the setup resets the mock HR store and viewer after each test; jsdom renders both desktop table and mobile list (scope queries with `within(table)`); jsdom has no `matchMedia` (treated as small screen). Run long suites with `timeout` and `--testTimeout`.
+- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 5 starts only after the user has merged the Phase 4 PR: update `dev-main`, create `phase-5-leave-approvals`, publish it.
+- Ask about Q-LEAVE-* and Q-APPR-* before building those rules; Q-ATT-01…07 (D-086) and Q-ORG-01…05 (D-084) are still provisional.
+- Phase 5 builds on: `services/mock/hr-store.ts` (scope, managers, roles), `services/mock/attendance-store.ts` (pattern for a store built on the HR store; approved leave may later feed attendance, Q-ATT-05), dashboards' leave widgets (P2), `src/lib/csv.ts` for exports.
+- Patterns: registry-reachable modules (schemas, contracts, `*.http.ts`, `*.mock.ts`, pure lib) import other features' **pure modules directly**, never their `index.ts` (import cycle; lint catches it). Shared controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`, `PaginationBar`. Effects that set form errors depend on stable strings.
+- Testing: `renderApp(path, { signedInAs })`; setup resets the mock stores, the viewer and TanStack Query's `onlineManager` after each test (an `offline` event otherwise pauses every later query). To freeze the clock use `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed (`mockAttendanceStore.reset()`). jsdom renders both desktop table and mobile list (scope with `within(table)`). Run long suites with `timeout` and `--testTimeout`.
+- Bundle: main chunk 533 kB (mock stores bundled via the registry, R-022); consider loading mocks only in mock mode (P9-T06).
 - Frontend focus (D-080); commit per `CLAUDE.md` §8; never merge PRs.
 
 ---
@@ -340,33 +340,33 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Attendance recording, display, classification and correction against mock services, with policy logic in pure tested functions.
 **Dependencies:** Phase 3 complete (employees/teams exist), Phase 1 time helpers.
-**Status:** Not started.
-**Open items touching this phase:** Q-ATT-01 (checkout before 17:45), Q-ATT-02 (absent definition), Q-ATT-03 (multiple sessions), Q-ATT-04 (correction rules), Q-ATT-05 (holidays/weekends/leave days in attendance).
+**Status:** Complete (2026-11-25): P4-T01…T14 implemented and verified in mock mode on `phase-4-attendance`. Not visually checked in a browser.
+**Open items touching this phase:** Q-ATT-01…07 handled provisionally (D-086): before-17:45 check-out shown neutrally, absent not derived, single session, HR-only corrections, no weekend/holiday rules, forgotten check-outs flagged only, no location.
 
 ### Tasks and subtasks
 
-- [ ] **P4-T01** Types and schemas: `AttendanceRecord`, `AttendanceSession`, `AttendanceCorrection`, `CorrectionAuditEntry`.
-  - [ ] Store actual timestamps as ISO 8601 with offset; never store rounded times.
-- [ ] **P4-T02** Pure policy module `features/attendance/lib/policy.ts` using `Asia/Karachi`:
-  - [ ] `classifyCheckIn(instant)` → `early | on_time | late` with exact boundaries (09:00:00, 09:15:00 inclusive on time, 09:15:01 late).
-  - [ ] `classifyCheckOut(instant)` → at/after 17:45 = no early-departure flag; before 17:45 = **returns "unclassified (policy undecided)"; BLOCKED by Q-ATT-01** (no penalty logic).
-  - [ ] `workingDuration(checkIn, checkOut)` = exact difference; no rounding; no break deduction.
-  - [ ] `isIncomplete(session)`.
-  - [ ] Karachi calendar-date derivation for an instant (day-boundary behavior at midnight Karachi).
-  - [ ] No payroll or salary fields anywhere.
-- [ ] **P4-T03** `AttendanceService` interface, mock and HTTP implementations: check-in, check-out, my history, team attendance, org attendance, record detail, HR correction, correction history.
-- [ ] **P4-T04** Check-in/check-out widget: current state, live Karachi clock display, disabled states, duplicate-click protection, error and offline handling. Multiple sessions per day **BLOCKED by Q-ATT-03**; implement single-session behavior only as a clearly isolated rule or ask the user before building.
-- [ ] **P4-T05** Personal attendance history: table with date, check-in, check-out, duration, Late-In badge, Incomplete badge; filters by date range.
-- [ ] **P4-T06** Attendance calendar view with status indicators; holiday/weekend rendering **BLOCKED by Q-ATT-05** (display only data supplied by service).
-- [ ] **P4-T07** Incomplete-session identification: clear UI marker and filter; no automatic checkout is invented.
-- [ ] **P4-T08** Team attendance (Manager, Team Lead, Senior PM, Associate PM within scope) with filters (date, team, status, late only, incomplete only).
-- [ ] **P4-T09** Organization-wide attendance for HR with department/team/employee filters.
-- [ ] **P4-T10** HR correction workflow: edit record with **mandatory reason**; confirm dialog; shows before/after.
-  - [ ] Rules about who may correct, time limits and approvals **BLOCKED by Q-ATT-04**; only HR correction with reason is built.
-- [ ] **P4-T11** Correction audit history view per record (who, when, reason, before, after).
-- [ ] **P4-T12** Exports of attendance lists (CSV at minimum; format choice recorded in DECISIONS), with formula-injection neutralization.
-- [ ] **P4-T13** Dashboards integration: replace placeholder attendance data in Phase 2 dashboards with the attendance service; "absent" remains provisional until Q-ATT-02 is answered.
-- [ ] **P4-T14** Update `API_INTEGRATION.md` and backend specification notes (attendance models, Karachi calculation location, indexes on employee/date, uniqueness constraints, correction audit).
+- [x] **P4-T01** Types and schemas: `AttendanceRecord`, `AttendanceSession`, `AttendanceCorrection`, `CorrectionAuditEntry`. (`features/attendance/schemas/attendance.schema.ts`: with one session per day (Q-ATT-03) the record *is* the session (`AttendanceRecord`); the correction request is `CorrectionInput`, the audit entry `CorrectionEntry`; plus `TodayAttendance`, `AttendanceSummary`, list query and filters. Types inferred from Zod.)
+  - [x] Store actual timestamps as ISO 8601 with offset; never store rounded times. (Millisecond precision; `durationMs` exact.)
+- [x] **P4-T02** Pure policy module `features/attendance/lib/policy.ts` using `Asia/Karachi`:
+  - [x] `classifyCheckIn(instant)` → `early | on_time | late` with exact boundaries (09:00:00, 09:15:00 inclusive on time, 09:15:01 late). (09:15:00.000 on time, 09:15:00.001 late, D-086.)
+  - [x] `classifyCheckOut(instant)` → at/after 17:45 = no early-departure flag; before 17:45 = **returns "unclassified (policy undecided)"; BLOCKED by Q-ATT-01** (no penalty logic). (`within_window` / `before_window`; shown as neutral "Left before 5:45 PM", provisional D-086.)
+  - [x] `workingDuration(checkIn, checkOut)` = exact difference; no rounding; no break deduction. (`workingDurationMs`; RangeError if negative.)
+  - [x] `isIncomplete(session)`. (`sessionState(record, today)` → `not_checked_in | in_progress | complete | incomplete`.)
+  - [x] Karachi calendar-date derivation for an instant (day-boundary behavior at midnight Karachi). (`attendanceDate`.)
+  - [x] No payroll or salary fields anywhere.
+- [x] **P4-T03** `AttendanceService` interface, mock and HTTP implementations: check-in, check-out, my history, team attendance, org attendance, record detail, HR correction, correction history. (Plus today and summary. Mock over `services/mock/attendance-store.ts`: 30 days of fictional data, server-side classification, scope from the HR store, 400/403/404/409.)
+- [x] **P4-T04** Check-in/check-out widget: current state, live Karachi clock display, disabled states, duplicate-click protection, error and offline handling. Multiple sessions per day **BLOCKED by Q-ATT-03**; implement single-session behavior only as a clearly isolated rule or ask the user before building. (`CheckInCard`: live clock and running duration, buttons disabled while pending and offline, single session per day provisional D-086; used on My attendance and the Employee dashboard.)
+- [x] **P4-T05** Personal attendance history: table with date, check-in, check-out, duration, Late-In badge, Incomplete badge; filters by date range. (`/attendance` History tab; range validated; table on desktop, list on mobile.)
+- [x] **P4-T06** Attendance calendar view with status indicators; holiday/weekend rendering **BLOCKED by Q-ATT-05** (display only data supplied by service). (Month calendar, Monday first; days without data say "No record", never "absent".)
+- [x] **P4-T07** Incomplete-session identification: clear UI marker and filter; no automatic checkout is invented. ("Missing check-out" badge from the next day; "Missing check-out only" filter; dashboards count earlier open sessions.)
+- [x] **P4-T08** Team attendance (Manager, Team Lead, Senior PM, Associate PM within scope) with filters (date, team, status, late only, incomplete only). (`/attendance/records` "Team attendance"; filters From/To, Team, Employee, Show (Late-In / Missing check-out / Corrected); server-style pagination; Employee 403.)
+- [x] **P4-T09** Organization-wide attendance for HR with department/team/employee filters. (Same page for HR, title "Attendance records", plus Department filter.)
+- [x] **P4-T10** HR correction workflow: edit record with **mandatory reason**; confirm dialog; shows before/after. (Dialog with before → after preview; reason min. 5 characters; check-out after check-in; same date.)
+  - [x] Rules about who may correct, time limits and approvals **BLOCKED by Q-ATT-04**; only HR correction with reason is built. (Provisional D-086.)
+- [x] **P4-T11** Correction audit history view per record (who, when, reason, before, after). ("Correction history" dialog.)
+- [x] **P4-T12** Exports of attendance lists (CSV at minimum; format choice recorded in DECISIONS), with formula-injection neutralization. (`src/lib/csv.ts`, D-087; own history and filtered records.)
+- [x] **P4-T13** Dashboards integration: replace placeholder attendance data in Phase 2 dashboards with the attendance service; "absent" remains provisional until Q-ATT-02 is answered. (Manager, Team Lead, Senior/Associate PM: `LiveTeamAttendance`; Employee: real `CheckInCard`; HR: present/late/absent from the summary.)
+- [x] **P4-T14** Update `API_INTEGRATION.md` and backend specification notes (attendance models, Karachi calculation location, indexes on employee/date, uniqueness constraints, correction audit). (§6 Attendance; backend notes kept short per D-080, full specification in P9-T12.)
 
 ### Required tests (pure policy tests are mandatory and exhaustive)
 - Check-in classification: 08:00:00, 08:59:59, 09:00:00, 09:14:59, 09:15:00 (on time), 09:15:01 (late), 09:15:00.001 (late; define millisecond handling and record it), 12:00:00.
@@ -667,6 +667,10 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P3 | `src/services/mock/{hr-store,mock-session}.ts` (+test), `src/services/registry.ts`, `src/features/authentication/api/auth.mock.ts` | created/modified | Shared mock HR backend, viewer, registry wiring |
 | 2026-11-25 | P3 | `src/components/forms/{native-select,checkbox-list,server-errors}.tsx?`, `src/components/tables/pagination-bar.tsx`, `src/components/ui/{tabs,textarea,dialog,table}.tsx`, `src/hooks/use-media-query.ts`, `src/types/api.ts` | created | Shared controls and primitives |
 | 2026-11-25 | P3 | `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/layouts/shell/global-search.tsx`, `src/app/app-shell.test.tsx`, `src/test/setup.ts` | modified | Lazy Phase 3 routes, nav items, working global search, store reset in tests |
+| 2026-11-25 | P4 | `src/features/attendance/**` | created | Schemas, pure policy (+tests), export, service (+http, mock), hooks, badges, check-in card, record list, calendar, correction dialogs, two pages, tests |
+| 2026-11-25 | P4 | `src/services/mock/attendance-store.ts` (+test), `src/lib/csv.ts` (+test), `src/hooks/{use-now,use-online-status}.ts`, `src/features/dashboard/components/live-team-attendance.tsx` | created | Mock attendance backend, CSV helper, clock/online hooks, live team attendance widget |
+| 2026-11-25 | P4 | `src/services/mock/hr-store.ts`, `src/services/registry.ts`, `src/test/setup.ts`, `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/app-shell.test.tsx`, dashboard pages, widgets and tests | modified | Scope helpers for attendance, registry wiring, test resets (stores, `onlineManager`), routes and nav, dashboards use the attendance service |
+| 2026-11-25 | P4 | `docs/{IMPLEMENTATION_PLAN,DECISIONS,API_INTEGRATION,ARCHITECTURE}.md`, `README.md` | modified | Phase 4 progress, D-086/D-087, attendance endpoints, status |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -747,6 +751,12 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `vitest run` employee + organization pages | Run hung >400 s. Cause: reporting-loop `useEffect` depended on a new array each render → infinite re-render (real bug); also duplicate "Search" accessible names (real a11y bug: directory vs global search) and a test needing table scoping. Fixed: effect depends on message string; labels "Search employees"/"Search people"; global search made functional | P3 bug fixes |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (Phase 3) | All exit 0; 28 files / 374 tests; 3 × 374 in timezone runs. Main chunk 488.09 kB / 152.01 kB gzip (below Vite's 500 kB warning now); every Phase 3 page its own chunk | P3 acceptance |
 | 2026-11-25 | Dev server `curl` of `/employees`, `/employees/new`, `/employees/e-103`, `/employees/e-103/edit`, `/organization`, `/organization/chart` | All 200; no errors; server stopped. Not a visual check | P3 |
+| 2026-11-25 | `git fetch`, `dev-main` fast-forward to `79797cd` (PR #3 merged); `phase-4-attendance` created and pushed | Baseline checks pass | Phase 4 start (D-083) |
+| 2026-11-25 | `TZ=<zone> vitest run src/features/attendance/lib` for UTC, America/Los_Angeles, Asia/Karachi | 22/22 in each (check-in 08:00:00…12:00:00 incl. 09:15:00 on time, 09:15:00.001 and 09:15:01 late; checkout 17:44:59/17:45:00/18:00:00/18:30:00; exact durations; midnight 18:59:59Z/19:00:00Z) | P4-T02 required tests |
+| 2026-11-25 | `vitest run src/lib/csv.test.ts src/services/mock/attendance-store.test.ts` | 10/10 and 11/11 (formula prefixes `= + - @ tab CR`, quoting, BOM; store 409/400/403/404, scope, filters, correction audit) | P4-T03, P4-T12 |
+| 2026-11-25 | `vitest run src/features/attendance/pages` | First 6/10 failed (tables "not found"). Isolated run passed in 100 ms → cause: the offline test's `offline` event set TanStack Query's global `onlineManager` offline, pausing every later query (test-isolation bug). Fixed: test dispatches `online` again and setup resets `onlineManager` → 10/10 | P4 |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 4) | All exit 0; 32 files / 428 tests; 3 × 428 in timezone runs. Main chunk 533.30 kB / 167.52 kB gzip (above Vite's 500 kB warning again, R-022); attendance pages own chunks (6.01 kB, 9.52 kB) | P4 acceptance |
+| 2026-11-25 | Dev server `curl` of `/`, `/attendance` and attendance modules | All 200; no errors; server stopped. Not a visual check | P4 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -767,3 +777,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T10…T17 implemented and verified (also from a clean copy); P1-T18 automated part done | P1-T10–T17 | P1-T18 manual browser check pending (no browser available) | User visual check, then Phase 2 |
 | 2026-11-25 | Phase 2 implemented and verified: auth (login, reset, invitations, JWT session D-078/D-079, cross-tab), guards, role nav, six dashboards; tests found and fixed a redirect race and a service-instance flaw | P2-T01…T20 | Manual browser checks pending (user); Q-AUTH-01…04 provisional (D-081) | Phase 3 (Q-ORG-* first) |
 | 2026-11-25 | Phase 3 implemented and verified: employees directory/profile/create/edit/deactivate, organization management, reporting hierarchy with cycle checks, org chart, scope-aware mock backend; tests found a render loop and duplicate field names (fixed) | P3-T01…T15 | Q-ORG-01…05 provisional (D-084); manual browser checks pending | Phase 4 after PR merge |
+| 2026-11-25 | Phase 4 implemented and verified: pure Karachi attendance policy, mock attendance backend, check-in/out card, history, calendar, team/org records with filters, HR corrections with reason and audit history, CSV export, live dashboards; tests found a query-pausing test-isolation bug (fixed) | P4-T01…T14 | Q-ATT-01…07 provisional (D-086); manual browser checks pending | Phase 5 after PR merge |

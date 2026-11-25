@@ -39,7 +39,7 @@ src/
 ├── services/
 │   ├── api/                 Central typed HTTP client, ApiError, request helpers
 │   ├── auth/                In-memory access token, cross-tab refresh lock (Web Locks), auth channel (BroadcastChannel)
-│   ├── mock/                Shared mock infrastructure: latency, mock viewer (`mock-session.ts`), in-memory HR backend with fictional seed data (`hr-store.ts`)
+│   ├── mock/                Shared mock infrastructure: latency, mock viewer (`mock-session.ts`), in-memory HR backend with fictional seed data (`hr-store.ts`), attendance backend built on its scope (`attendance-store.ts`)
 │   ├── health/              System health service (reference implementation of the service pattern)
 │   └── registry.ts          Picks HTTP or mock implementation per domain from VITE_USE_MOCK_API
 ├── hooks/                   Shared React hooks (not feature-specific)
