@@ -639,6 +639,7 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P1-T06 | `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `tsconfig.json`, `tsconfig.app.json`, `src/index.css` | modified | Test deps + scripts; Vitest config; test tsconfig reference; app tsconfig excludes tests; Tailwind `@source not` for tests |
 | 2026-11-25 | P1-T07 | `.prettierrc.json`, `.prettierignore` | created | Prettier config |
 | 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Commit message convention (`CLAUDE.md` §8, D-039) |
+| 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Added `chore:` commit type (D-039) |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |

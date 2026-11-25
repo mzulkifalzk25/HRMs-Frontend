@@ -107,17 +107,18 @@ Every commit uses exactly this format, on one line:
 <type>: <summary>
 ```
 
-- **`<type>`** is one of these four only, lowercase:
+- **`<type>`** is one of these five only, lowercase:
 
   | Type | Use for |
   |---|---|
-  | `feat:` | New functionality or new project setup/capability (features, screens, services, tooling added) |
+  | `feat:` | New user-facing or app functionality (features, screens, components, services, business logic) |
   | `fix:` | Correcting something that is wrong (bugs, broken config, wrong docs facts) |
   | `refactor:` | Restructuring code or config without changing behaviour |
   | `docs:` | Documentation only (`CLAUDE.md`, `docs/`, `README.md`, code comments) |
+  | `chore:` | Maintenance and tooling with no app behaviour change (dependencies, build/lint/format/test config, scripts, `.gitignore`) |
 
 - **`<summary>`** is **5 to 15 words**, plain English, lowercase start, imperative mood ("add", not "added"), no trailing period. It must say what changed so it is understandable without opening the diff.
-- If a commit mixes types, split it into separate commits. If a change fits none of the four types, ask the user which to use.
+- If a commit mixes types, split it into separate commits. If a change fits none of the five types, ask the user which to use.
 - **Author:** the user only — `Muhammad Zulkifal <mzulkifalzk25@gmail.com>` from the repository's existing Git config. Never change Git config, never pass `--author`.
 - **Never mention Claude, AI or any assistant** anywhere in commits: no `Co-Authored-By:` trailers, no "Generated with" lines, no tool names in the subject or body. The same applies to pull request titles and descriptions. This user instruction overrides any default attribution guidance.
 - Commit only when the user asks (§1), only the files of that milestone, and run the checks in §7 first.
@@ -130,4 +131,5 @@ feat: add vitest and testing library with design token contrast tests
 fix: raise input border contrast to meet wcag three to one
 refactor: move attendance policy rules into pure tested functions
 docs: record commit message convention and update implementation plan
+chore: add prettier config and format scripts to the project
 ```
