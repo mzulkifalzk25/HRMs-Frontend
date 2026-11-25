@@ -102,7 +102,38 @@ Implemented hooks only:
 - On `401`, the client calls one shared `refreshSession()` and retries the request once; if refresh fails, `onSessionExpired()` runs.
 - Public endpoints (login, password reset, invitation) are called with `auth: false`: no token, no refresh.
 
-Endpoints, token lifetimes and cookie settings are documented in Phase 2 (P2-T20).
+**Proposed endpoints** (frontend implemented and tested in `features/authentication/api/auth.http.ts`, P2-T20). All are `POST` except `auth/me/`. Bodies are JSON; field names snake_case.
+
+| Endpoint | Auth | Cookies | Request body | Success response | Errors the UI handles |
+|---|---|---|---|---|---|
+| `auth/login/` | none | include | `{ "email", "password" }` | `200 { "access": "<jwt>", "user": User }` + sets refresh cookie | `401` generic "Email or password is incorrect." (same for unknown email: no enumeration); `400` field errors |
+| `auth/token/refresh/` | none | include | — (refresh token in cookie) | `200 { "access", "user" }` + rotated refresh cookie | `401/403` → signed out (also used on page reload) |
+| `auth/logout/` | Bearer | include | — | `204`; blacklists the refresh token, clears the cookie | Any failure: the frontend still signs out locally |
+| `auth/me/` (GET) | Bearer | — | — | `200 User` | `401` → refresh once, then session expired |
+| `auth/password-reset/` | none | — | `{ "email" }` | `204` **always**, whether or not the account exists | `400` invalid email |
+| `auth/password-reset/validate/` | none | — | `{ "token" }` | `200 { "status": "valid" \| "invalid" \| "expired" \| "used" }` | — |
+| `auth/password-reset/confirm/` | none | — | `{ "token", "password" }` | `204` | `400` token no longer valid or password rejected (message shown) |
+| `auth/invitations/validate/` | none | — | `{ "token" }` | `200 { "status", "email"? }` (`email` when valid) | — |
+| `auth/invitations/accept/` | none | — | `{ "token", "password" }` | `204` (account activated) | `400` token no longer valid or password rejected |
+
+`User`:
+
+```json
+{
+  "id": 42,
+  "email": "employee@formbaxhr.test",
+  "first_name": "Ali",
+  "last_name": "Demo",
+  "role": "employee",
+  "employee_code": "FBX-1006",
+  "designation": "Software Engineer",
+  "department": "Engineering"
+}
+```
+
+`role` is one of `hr_admin`, `manager`, `senior_pm`, `associate_pm`, `team_lead`, `employee`; any other value (for example a Django superuser) is rejected by the frontend (D-041). `employee_code`, `designation`, `department` may be `null`.
+
+Reset and invitation tokens are sent in request bodies (never in API URLs) so they do not end up in server access logs. Password rules shown in the UI are provisional (D-081, Q-AUTH-01); the backend's validators are authoritative and their messages are displayed.
 
 ## 5. Pagination, filtering and sorting
 
@@ -123,7 +154,14 @@ GET employees/?page=2&page_size=25&search=demo&department=eng&status=active&stat
 
 | Endpoint | Method | Service method | Used by | Status |
 |---|---|---|---|---|
-| `health/` | GET | `HealthService.getStatus` | Overview page (system status) | Proposed (frontend implemented and tested against this contract) |
+| `health/` | GET | `HealthService.getStatus` | — (reference service; Phase 1 overview page removed in Phase 2) | Proposed |
+| `auth/*` | see §4 | `AuthService.*` | Login, forgot/reset password, invitation, session restore, account menu | Proposed (implemented and tested) |
+| `dashboard/hr/` | GET | `DashboardService.getHrDashboard` | HR dashboard | Proposed (implemented and tested) |
+| `dashboard/manager/` | GET | `DashboardService.getManagerDashboard` | Manager dashboard | Proposed |
+| `dashboard/senior-pm/` | GET | `DashboardService.getSeniorPmDashboard` | Senior PM dashboard | Proposed |
+| `dashboard/associate-pm/` | GET | `DashboardService.getAssociatePmDashboard` | Associate PM dashboard | Proposed |
+| `dashboard/team-lead/` | GET | `DashboardService.getTeamLeadDashboard` | Team Lead dashboard | Proposed |
+| `dashboard/employee/` | GET | `DashboardService.getEmployeeDashboard` | Employee dashboard | Proposed |
 
 `GET health/`: public (no auth). Response:
 
@@ -133,4 +171,29 @@ GET employees/?page=2&page_size=25&search=demo&department=eng&status=active&stat
 
 `status` is `"ok"` or `"degraded"`.
 
-Further endpoints are added per phase: authentication (P2-T20), employees and organization (P3-T15), attendance (P4-T14), leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+### Dashboards (P2-T12)
+
+Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
+
+```json
+{
+  "team": [{ "id": "e-103", "name": "Mariam S.", "designation": "QA Engineer", "today_status": "present" }],
+  "team_attendance": { "total": 4, "present": 2, "late": 0, "on_leave": 1, "not_checked_in": 1, "absent": 0 },
+  "review_tasks": [
+    {
+      "id": "apr-review-2",
+      "employee_name": "Mariam S.",
+      "leave_type": "annual",
+      "start_date": "2026-12-05",
+      "end_date": "2026-12-07",
+      "requested_days": 3,
+      "stage": "review",
+      "submitted_at": "2026-11-25T10:05:00+05:00"
+    }
+  ]
+}
+```
+
+Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
+
+Further endpoints are added per phase: employees and organization (P3-T15), attendance (P4-T14), leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.

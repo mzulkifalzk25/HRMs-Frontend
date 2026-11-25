@@ -2,7 +2,7 @@
 
 **FormbaxHR** is an enterprise HR management system (employees, attendance, leave and approvals, organization, imports, reports, notifications, audit) inspired by Zoho People in functionality, with its own design. This repository is the **frontend**. A separate Django 5.2 + Django REST Framework + PostgreSQL backend will be built later; until then the app runs on **mock services with fictional data**.
 
-> Status: **Phase 1 (project foundation)**. The app shell, service layer, API client, time helpers and tooling are in place. Business modules start in Phase 2. Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+> Status: **Phase 2 complete** (authentication and role dashboards, in mock mode). Next: employees and organization (Phase 3). Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
 ## Technology
 
@@ -59,6 +59,7 @@ Before finishing a change: `pnpm typecheck && pnpm lint && pnpm format:check && 
 
 - Every domain has a typed service interface with two implementations: HTTP (`*.http.ts`) and mock (`*.mock.ts`). `src/services/registry.ts` picks one set based on `VITE_USE_MOCK_API`; screens never change.
 - In mock mode a **"Mock data"** badge is always visible in the top bar. Mock data is fictional.
+- **Demo sign-in (mock mode only):** the login page lists one fictional account per role (HR Administrator, Manager, Senior PM, Associate PM, Team Lead, Employee) with the shared demo password; click one to fill the form. Reloading the page ends a mock session. Test links for password reset and invitations are shown on those pages in mock mode.
 - Lint blocks importing mock modules from screens or components.
 - The HTTP client (`src/services/api/`) normalizes every failure into an `ApiError`, validates responses with Zod, supports timeouts and cancellation, and has refresh-on-401 hooks. Sessions use JWT: access token in memory, refresh token in an httpOnly cookie with rotation, blacklisted on logout (wired up in Phase 2).
 - Frontend role checks are for user experience only; the backend is authoritative for authentication, permissions and business rules.
