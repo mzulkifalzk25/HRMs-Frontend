@@ -124,3 +124,26 @@ export function formatAppTime(instant: Instant, options: { seconds?: boolean } =
 export function formatAppDateTime(instant: Instant): string {
   return format(toAppZone(instant), DISPLAY_FORMATS.dateTime)
 }
+
+/**
+ * Move a calendar date (`YYYY-MM-DD`) by whole days. Pure calendar arithmetic, independent of
+ * any timezone or DST. Example: `shiftDateKey('2026-02-28', 1)` → `2026-03-01`.
+ */
+export function shiftDateKey(dateKey: string, days: number): string {
+  const match = dateKeyPattern.exec(dateKey)
+  if (!match || !Number.isInteger(days)) {
+    throw new InvalidInstantError(dateKey, 'expected YYYY-MM-DD and an integer number of days')
+  }
+  const [, y, m, d] = match
+  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)))
+  if (date.toISOString().slice(0, 10) !== dateKey) {
+    throw new InvalidInstantError(dateKey, 'not a real calendar date')
+  }
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+/** Format a calendar date key for display (provisional format, Q-TECH-04). */
+export function formatDateKey(dateKey: string): string {
+  return formatAppDate(appWallClockToInstant(dateKey, '12:00'))
+}

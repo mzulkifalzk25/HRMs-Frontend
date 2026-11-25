@@ -36,6 +36,11 @@ export type RequestOptions<T> = {
   schema?: ZodType<T>
   /** Set `false` for public endpoints (login, password reset): no token, no refresh. */
   auth?: boolean
+  /**
+   * Per-request cookie policy. Auth endpoints use `'include'` so the httpOnly refresh cookie
+   * reaches the API on another origin (D-079). Defaults to the client setting (`same-origin`).
+   */
+  credentials?: RequestCredentials
 }
 
 export type HttpClientConfig = {
@@ -137,7 +142,7 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
         headers,
         body,
         signal,
-        credentials: config.credentials ?? 'same-origin',
+        credentials: options.credentials ?? config.credentials ?? 'same-origin',
       })
     } catch (error) {
       if (options.signal?.aborted) {

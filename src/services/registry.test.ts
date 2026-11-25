@@ -64,6 +64,27 @@ describe('createServices', () => {
   })
 })
 
+describe('createServices: Phase 2 services', () => {
+  it('exposes auth and dashboard in both modes, and mock fixtures only in mock mode', async () => {
+    const mock = createServices({ useMockApi: true, client: fakeClient({}), mockLatencyMs: 0 })
+    const http = createServices({ useMockApi: false, client: fakeClient({}) })
+    expect(mock.mockFixtures?.demoAccounts).toHaveLength(6)
+    expect(mock.mockFixtures?.demoAccounts.every((a) => a.email.endsWith('@formbaxhr.test'))).toBe(
+      true,
+    )
+    expect(http.mockFixtures).toBeNull()
+    for (const services of [mock, http]) {
+      expect(typeof services.auth.login).toBe('function')
+      expect(typeof services.dashboard.getHrDashboard).toBe('function')
+    }
+    const session = await mock.auth.login({
+      email: 'hr.admin@formbaxhr.test',
+      password: mock.mockFixtures?.demoPassword ?? '',
+    })
+    expect(session.user.role).toBe('hr_admin')
+  })
+})
+
 describe('mock infrastructure', () => {
   it('mock health service uses the injected clock', async () => {
     const service = createMockHealthService({

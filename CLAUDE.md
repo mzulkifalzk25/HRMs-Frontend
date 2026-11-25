@@ -15,7 +15,7 @@ Do not rely on conversation history. These three files are the source of truth:
 
 ## 1. Non-negotiable rules
 
-1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session.** Never change global Git config or credentials.
+1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session** — the one standing exception is the phase workflow in §9 (D-083). Never merge pull requests, never push to `main` or `dev-main` directly. Never change global Git config or credentials.
 2. **Data safety.** Inspect a file before changing it. Do not delete or overwrite files, configuration or documentation without explaining why and getting permission. Preserve `.gitignore`, `README.md` and `.vscode/` (local, ignored).
 3. **Secrets.** Never read, create, modify or print `.env` files containing secrets. Only `.env.example` with placeholder values is committed. No tokens, passwords or real personal data in code, mocks, logs or docs.
 4. **No invented business rules.** If a rule is not a confirmed decision in `docs/DECISIONS.md`, do not implement it as a guess. Isolate the behavior, mark the task `BLOCKED by Q-…`, and ask the user.
@@ -135,3 +135,16 @@ refactor: move attendance policy rules into pure tested functions
 docs: record commit message convention and update implementation plan
 chore: add prettier config and format scripts to the project
 ```
+
+## 9. Branch and pull-request workflow (D-083)
+
+`dev-main` is the integration branch. Every phase follows this cycle:
+
+1. **Start a phase:** update local `dev-main` from GitHub (`git fetch origin` then `git switch dev-main` and `git pull --ff-only`), then create the phase branch from it: `git switch -c phase-<n>-<short-name>`.
+2. **Publish right away:** `git push -u origin phase-<n>-<short-name>`.
+3. **During and at the end of the phase:** commit per §8 (grouped by kind of change), run the §7 checks, and push.
+4. **Open a PR into `dev-main`** with `gh pr create --base dev-main`. Title follows §8 (e.g. `feat: phase 3 employee and organization management`). The body lists what the phase delivers, the verification actually run, what was not verified, and open questions. **No AI/Claude mention** in titles or bodies (§8).
+5. **The user reviews and merges the PR.** Claude Code never merges. Recommend "Create a merge commit" (not squash/rebase) when a later phase branch was built on top, so its PR does not duplicate commits.
+6. **Next phase** starts again at step 1 from the updated `dev-main`, only after the user has merged.
+
+If a phase branch was started before this workflow (Phases 1 and 2 are stacked: `phase-2-auth-dashboards` contains `phase-1-foundation`), merge the earlier PR first.

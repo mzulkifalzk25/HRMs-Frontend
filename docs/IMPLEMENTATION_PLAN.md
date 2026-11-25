@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phase 1 implementation complete: toolchain, env, API client, service registry, Karachi time helpers, providers/router, app shell, feedback components, mock badge, README + API doc. 158 tests; all checks pass, also from a clean copy. |
-| Current phase | Phase 1: Project foundation (awaiting manual visual check) |
-| Current task | P1-T18: manual visual check of the shell (user) |
-| Next task | Phase 2 — P2-T01 (auth types and schemas). Token handling decided (D-078, D-079); Q-AUTH-01…04 still open |
-| Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
+| Overall state | Phases 1 and 2 implemented: foundation plus authentication (login, password reset, invitations, JWT session per D-078/D-079, guards) and six role dashboards in mock mode. 289 tests; all checks pass. |
+| Current phase | Phase 2 complete; Phase 3 next. Manual visual checks of Phases 1–2 pending (user). |
+| Current task | User review: manual browser check of the shell (P1-T18) and Phase 2 screens |
+| Next task | Phase 3 — P3-T01 (employee and organization types). Blocked items: Q-ORG-01…05, Q-LEAVE-11, Q-APPR-04 |
+| Branch | `phase-2-auth-dashboards` (created 2026-11-25 from `phase-1-foundation` @ `d0dba27`; D-034). Neither phase branch is merged or pushed. |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | P1-T01…T09 committed (latest `da4cd14`). Uncommitted: P1-T10…T17 work and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
+| Working tree | Phase 2 committed on `phase-2-auth-dashboards` (see `git log`). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -38,20 +38,14 @@
 
 Update this section at the end of every session.
 
-- Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
-- Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
-- Check whether the user did the P1-T18 manual visual check (desktop ≥1024 px, mobile ~375 px); record the result.
-- Next: **Phase 2** starting with P2-T01. Token handling is decided (D-078, D-079); ask the user about Q-AUTH-01…04 (password, invitation, session timeout) before building those rules.
-- Frontend focus (D-080): no backend work. Keep `docs/API_INTEGRATION.md` updated with the endpoints each phase's HTTP services call; make mocks realistic (in-memory state, 4xx errors, latency).
-- Patterns to reuse: services via `src/services/registry.ts`; pages use `PageHeader`, `ErrorState` + `userMessage()`, skeletons, `EmptyState`; times via `src/lib/datetime.ts` only; routes get `handle: { breadcrumb }`; add nav items in `src/app/navigation.ts` (switch planned → available).
-- Testing notes: jsdom has no `ResizeObserver` (stubbed in `src/test/setup.ts`); use `renderRoutes`/`renderWithProviders` from `src/test/render.tsx`.
-- `pnpm preview` needs env vars set (production builds refuse missing values, D-076): e.g. create `.env.production.local` from `.env.example`.
-- Before finishing a task, run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
-- Testing notes: Vitest returns `''` for CSS imports (even `?raw`) — read files with `node:fs` in a `// @vitest-environment node` test. No Vitest globals: import `describe/it/expect` explicitly. Tailwind skips test files via `@source not` in `src/index.css`.
-- `@tanstack/react-table` agent-skills approval is **pending the user's decision** (R-020). Do not run `pnpm approve`.
-- shadcn: use `pnpm shadcn add <name>`, never `shadcn init` (see `CLAUDE.md` §7).
-- Respect pnpm's `minimumReleaseAge`; never add `minimumReleaseAgeExclude` without user approval (R-017).
-- Do not commit or push unless asked.
+- Start by following the session start protocol in `CLAUDE.md` §2. Check PR status (`gh pr list --base dev-main`). Phase 3 starts only after the user has merged the Phase 1 and Phase 2 PRs: then update `dev-main` and create `phase-3-employees-organization` from it, publish it, and open its PR when done (`CLAUDE.md` §9, D-083).
+- Ask whether the user did the manual browser checks (P1-T18 shell; Phase 2 login, dashboards, mobile width) and record results.
+- Next: **Phase 3** (employees and organization), P3-T01. Ask the user about Q-ORG-01…05 (employee fields/ID format, single vs multi-company, deactivation rules, multiple teams, HR self-edit) before building those rules; also Q-LEAVE-11 / Q-APPR-04 for reporting relations.
+- Frontend focus (D-080): no backend work. Keep `docs/API_INTEGRATION.md` updated with each phase's endpoints; mocks realistic (in-memory state, 4xx errors, latency); every mock response must pass its Zod schema (see `dashboard-services.test.ts`).
+- Patterns: services via `src/services/registry.ts` (add the domain to `Services` + both branches); screens via TanStack Query hooks; `PageHeader`, `SectionCard`, `StatCard`, `StatusBadge`, `EmptyState`, `ErrorState` + `userMessage()`; forms with `FormField` + Zod + React Hook Form (`useWatch`, not `watch`); times only via `src/lib/datetime.ts`; routes in `createAppRoutes` with `handle: { breadcrumb }` and `RequireRole`; nav items in `src/app/navigation.ts` with `roles`; lazy-load heavy pages.
+- Testing: `renderApp(path, { signedInAs })` (fresh mock auth per test) and `withSignedInUser` from `src/test/render.tsx`; mock latency is 0 under Vitest; jsdom has no ResizeObserver (stubbed).
+- Respect pnpm's `minimumReleaseAge`; do not approve the pending `@tanstack/react-table` agent skills (R-020).
+- Commit messages per `CLAUDE.md` §8. Do not commit or push unless asked.
 
 ---
 
@@ -248,36 +242,36 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Complete authentication UX against mock services, role-based routing, and six role dashboards.
 **Dependencies:** Phase 1 complete.
-**Status:** Not started.
-**Open items touching this phase:** Q-AUTH-* (password policy, invitation expiry, session timeout). Token handling decided: D-078, D-079.
+**Status:** Complete (2026-11-25): P2-T01…T20 implemented and verified in mock mode. Not visually checked in a browser (no browser in the Claude Code session); HTTP mode not run against a real backend (none exists yet).
+**Open items touching this phase:** Q-AUTH-* (password policy, invitation expiry, session timeout) — handled provisionally (D-081). Token handling decided: D-078, D-079.
 
 ### Tasks and subtasks
 
-- [ ] **P2-T01** Domain types and Zod schemas for authentication: `User`, `Role`, `AuthSession`, login/forgot/reset/set-password payloads.
-- [ ] **P2-T02** `AuthService` interface; mock and HTTP implementations.
-  - [ ] Login, logout, current user (`me`), forgot password, reset password, invitation/set-password, token refresh (interface).
-  - [ ] Mock accounts: one per role, fictional, clearly labelled.
-- [ ] **P2-T03** Session handling (mock mode).
-  - [ ] In-memory session for mock mode (HTTP mode follows D-079: access token in memory, refresh cookie).
-  - [ ] HTTP-mode session per D-078/D-079 (no longer blocked): access token in memory; refresh via httpOnly cookie with rotation; restore session on reload with one refresh call; `credentials: 'include'` on auth calls; coordinate refreshes across tabs (BroadcastChannel/Web Locks).
-- [ ] **P2-T04** Login page: validation, error states, loading state, no account enumeration in messages, no public signup link.
-- [ ] **P2-T05** Forgot password and reset password pages (token from URL; invalid/expired token states).
-- [ ] **P2-T06** Invitation / set-password page (token-based; expiry rules BLOCKED by Q-AUTH-02 for specific values, UI states for expired/invalid still built).
-- [ ] **P2-T07** Route guards: authenticated guard, role guard, redirect-to-login with return path, forbidden (403) page, not-found page. Documented as UX only.
-- [ ] **P2-T08** Role-based post-login redirect to each role's dashboard.
-- [ ] **P2-T09** Current-user profile page (read-only basics for now; edit fields decided in Phase 3).
-- [ ] **P2-T10** Logout (clears session and cached queries; confirmation not required). Per D-078: call the backend logout endpoint so the token is blacklisted, then clear the local session even if that call fails.
-- [ ] **P2-T11** Role-aware navigation: sidebar items per role (only modules that exist so far; others hidden, not dead links).
-- [ ] **P2-T12** Dashboard data services (mock) with typed interfaces per dashboard.
-- [ ] **P2-T13** HR dashboard: total employees, present today, absent today, late arrivals, pending leave requests, department overview, attendance trends (Recharts), recent activity.
-  - [ ] "Absent today" display **BLOCKED by Q-ATT-02** (definition). Build the card with the metric clearly labelled as provisional/mock until decided; do not encode a business definition in logic.
-- [ ] **P2-T14** Manager dashboard: team attendance, team leave requests, approval inbox preview, team overview.
-- [ ] **P2-T15** Senior PM dashboard: Associate PM and project-team overview, pending approvals, team summaries.
-- [ ] **P2-T16** Associate PM dashboard: assigned team, attendance, review and recommendation tasks.
-- [ ] **P2-T17** Team Lead dashboard: team attendance, leave review and comments, team overview.
-- [ ] **P2-T18** Employee dashboard: personal attendance, check-in/check-out widget (UI shell; behavior in Phase 4), leave balances, leave requests, notifications.
-- [ ] **P2-T19** Handle 401/403 centrally (expired session → login; forbidden → 403 page).
-- [ ] **P2-T20** Update `API_INTEGRATION.md` with authentication endpoints and payloads (marked proposed until backend exists).
+- [x] **P2-T01** Domain types and Zod schemas for authentication: `User`, `Role`, `AuthSession`, login/forgot/reset/set-password payloads. (`features/authentication/types.ts`, `schemas/auth.schema.ts`: login, forgot, set-password with provisional policy, snake_case API user/session/token-check schemas; unknown roles such as a superuser rejected.)
+- [x] **P2-T02** `AuthService` interface; mock and HTTP implementations. (`api/auth.service.ts`, `auth.http.ts` (proposed endpoints, cookies on login/refresh/logout, tokens in request bodies), `auth.mock.ts` (in-memory state per instance).)
+  - [x] Login, logout, current user (`me`), forgot password, reset password, invitation/set-password, token refresh (interface).
+  - [x] Mock accounts: one per role, fictional, clearly labelled. (Surname "Demo", `@formbaxhr.test`; shown on the login page only in mock mode via `services.mockFixtures`.)
+- [x] **P2-T03** Session handling (mock mode). (`session/auth-provider.tsx`: restore on start, API client hooks, cross-tab logout; `services/auth/`: in-memory access token, Web Locks refresh lock, BroadcastChannel.)
+  - [x] In-memory session for mock mode (HTTP mode follows D-079: access token in memory, refresh cookie). (A page reload ends the mock session; HTTP mode restores via the cookie.)
+  - [x] HTTP-mode session per D-078/D-079 (no longer blocked): access token in memory; refresh via httpOnly cookie with rotation; restore session on reload with one refresh call; `credentials: 'include'` on auth calls; coordinate refreshes across tabs (BroadcastChannel/Web Locks). (Implemented and unit-tested against a fake fetch; not run against a real backend, which does not exist yet.)
+- [x] **P2-T04** Login page: validation, error states, loading state, no account enumeration in messages, no public signup link. (Also: session-expired notice, server field errors mapped to inputs, mock demo-account panel.)
+- [x] **P2-T05** Forgot password and reset password pages (token from URL; invalid/expired token states). (Identical confirmation for any email; missing/invalid/expired/valid states; live password checklist.)
+- [x] **P2-T06** Invitation / set-password page (token-based; expiry rules BLOCKED by Q-AUTH-02 for specific values, UI states for expired/invalid still built). (`/invite?token=`: missing/invalid/expired/used/valid; expiry values stay with the backend.)
+- [x] **P2-T07** Route guards: authenticated guard, role guard, redirect-to-login with return path, forbidden (403) page, not-found page. Documented as UX only. (`app/guards/guards.tsx`: RequireAuth, RequireRole, GuestOnly, RoleHomeRedirect; open-redirect protection via `safeRedirectPath`.)
+- [x] **P2-T08** Role-based post-login redirect to each role's dashboard. (`postLoginPath`; a safe `?redirect=` wins. Bug found by tests and fixed: GuestOnly now uses the same rule, so it no longer races the login page.)
+- [x] **P2-T09** Current-user profile page (read-only basics for now; edit fields decided in Phase 3). (`/profile`.)
+- [x] **P2-T10** Logout (clears session and cached queries; confirmation not required). Per D-078: call the backend logout endpoint so the token is blacklisted, then clear the local session even if that call fails. (Also signs out other tabs.)
+- [x] **P2-T11** Role-aware navigation: sidebar items per role (only modules that exist so far; others hidden, not dead links). (`app/navigation.ts` `navigationForRole`; Phase 1's "planned" entries removed.)
+- [x] **P2-T12** Dashboard data services (mock) with typed interfaces per dashboard. (`features/dashboard/schemas/dashboard.schema.ts` (types inferred from Zod), service, HTTP (camelized + validated), mock (dates relative to Karachi today; every mock passes its schema).)
+- [x] **P2-T13** HR dashboard: total employees, present today, absent today, late arrivals, pending leave requests, department overview, attendance trends (Recharts), recent activity. (Chart has a screen-reader table; Late-In labelled "tracking only".)
+  - [x] "Absent today" display **BLOCKED by Q-ATT-02** (definition). Build the card with the metric clearly labelled as provisional/mock until decided; do not encode a business definition in logic. (Labelled "Provisional definition"; value comes from the service, never derived.)
+- [x] **P2-T14** Manager dashboard: team attendance, team leave requests, approval inbox preview, team overview.
+- [x] **P2-T15** Senior PM dashboard: Associate PM and project-team overview, pending approvals, team summaries.
+- [x] **P2-T16** Associate PM dashboard: assigned team, attendance, review and recommendation tasks.
+- [x] **P2-T17** Team Lead dashboard: team attendance, leave review and comments, team overview.
+- [x] **P2-T18** Employee dashboard: personal attendance, check-in/check-out widget (UI shell; behavior in Phase 4), leave balances, leave requests, notifications. (Check-in button disabled with an explanation; balances use the confirmed 7/7/7 allowances.)
+- [x] **P2-T19** Handle 401/403 centrally (expired session → login; forbidden → 403 page). (401 → one refresh → `onSessionExpired` → login with notice + return path; role guard → 403 page; API 403 in data views shows the permission message via `ErrorState`.)
+- [x] **P2-T20** Update `API_INTEGRATION.md` with authentication endpoints and payloads (marked proposed until backend exists). (Also dashboard endpoints.)
 
 ### Required tests
 - Auth schemas (valid/invalid inputs).
@@ -662,6 +656,14 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P1-T13 | `src/features/dashboard/{index.ts,api/use-system-health.ts,pages/overview-page.tsx,pages/overview-page.test.tsx}` | created | Phase 1 landing page exercising the full data path |
 | 2026-11-25 | P1-T17 | `README.md`, `docs/ARCHITECTURE.md` | modified | Full README (original heading kept); architecture map updated |
 | 2026-11-25 | P1-T17 | `docs/API_INTEGRATION.md` | created | API integration skeleton |
+| 2026-11-25 | P2 | `src/services/auth/{access-token,refresh-lock,auth-channel}.ts` + test | created | In-memory token, cross-tab refresh lock and logout channel |
+| 2026-11-25 | P2 | `src/services/api/{http-client,index}.ts`, `src/services/api/response.ts` (+test), `src/services/registry.ts` (+test), `src/services/mock/latency.ts` | created/modified | Per-request credentials; camelize + contract parsing; registry adds auth, dashboard, mockFixtures; 0 ms mock latency under Vitest |
+| 2026-11-25 | P2 | `src/features/authentication/**` | created | Types, schemas, password policy, role routes, AuthService (+http, mock), session provider/context, flow hooks, components, 5 pages, tests |
+| 2026-11-25 | P2 | `src/features/dashboard/**` | created/deleted | Dashboard schemas, service (+http, mock), hooks, components, 6 pages, tests; Phase 1 overview page, its hook and test removed |
+| 2026-11-25 | P2 | `src/types/hr.ts`, `src/lib/datetime.ts` (+test) | created/modified | Shared HR vocabulary; `shiftDateKey`, `formatDateKey` |
+| 2026-11-25 | P2 | `src/components/forms/*`, `src/components/shared/{stat-card,section-card,status-badge,user-avatar}.tsx`, `src/components/ui/{label,card}.tsx` | created | Form field/password input, dashboard building blocks, shadcn label/card |
+| 2026-11-25 | P2 | `src/app/guards/*`, `src/app/layouts/auth-layout.tsx`, `src/app/router/{routes.tsx,forbidden-page.tsx}`, `src/app/navigation.ts`, `src/app/layouts/{app-layout.tsx,shell/sidebar-nav.tsx,shell/user-menu.tsx}`, app tests, `src/test/{render.tsx,setup.ts}` | created/modified | Guards, auth layout, route factory with lazy dashboards, role-aware nav, real account menu; old shell test replaced |
+| 2026-11-25 | P2 | `.oxlintrc.json` | modified | `jsx-a11y/prefer-tag-over-role` off (ARIA roles kept deliberately, D-082) |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -724,6 +726,16 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (repo) | All exit 0; 13 files / 158 tests; 3 × 158 in timezone runs; build JS 651.60 kB (203.53 kB gzip), CSS 52.96 kB; Vite warns chunk > 500 kB (single route, no code splitting yet → P9-T06, R-022) | P1-T18 |
 | 2026-11-25 | Clean-copy check: `git ls-files -co --exclude-standard` copied to empty dir (88 files, no node_modules, no .env); `pnpm install --frozen-lockfile`; all six checks | All exit 0; 158 tests in each run | P1-T18 acceptance "runs from a clean clone" |
 | 2026-11-25 | `pnpm dev` in clean copy + `curl` `/`, `/src/main.tsx`, `/src/lib/env.ts`; repo dev server + deep link `/some/deep/link` | All 200 (SPA fallback works); no errors in logs; servers stopped (ports closed) | P1-T18 (not a visual check) |
+| 2026-11-25 | `shadcn add label card` (Phase 2) | 2 files; `index.css`/`package.json` unchanged | P2 |
+| 2026-11-25 | `vitest run src/services/api` (credentials option) | 26/26 | P2-T03 |
+| 2026-11-25 | `vitest run src/services/auth` | 6/6 (in-memory token, Web Lock name + serialization, real BroadcastChannel between two instances) | P2-T03 |
+| 2026-11-25 | `vitest run src/features/authentication` | 44/44 first run (redirect safety incl. `//`, backslash, control chars, auth pages; schemas; mock enumeration-safe errors, rotation, logout, reset, single-use invite; HTTP endpoints, cookies, tokens in body, 503 not treated as signed out) | P2-T01/T02/T05/T06 |
+| 2026-11-25 | `vitest run` dashboard services + registry + navigation | 63/63 (all six mock dashboards pass their schemas; 7/7/7 balances; Karachi-relative dates; HTTP camelize + contract rejection) | P2-T12 |
+| 2026-11-25 | `vitest run src/app/auth-flow.test.tsx` | First run 19/20: "returns to the requested page after login" failed — GuestOnly redirected to the dashboard and raced the login page's `?redirect=`; fixed (GuestOnly uses `postLoginPath`) → 20/20 | P2-T07/T08 bug fix |
+| 2026-11-25 | `vitest run` dashboards (6 × loading/empty/error/loaded + details) | 26/26 | P2-T13…T18 |
+| 2026-11-25 | `vitest run src/app src/features` | First 4 failures: 2 wrong test assertions; lazy route needs waitFor; reset/invite pages used the global `services.auth` instead of the session's service (design flaw) → service exposed via auth context → 146/146 | P2 |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (Phase 2) | All exit 0; 22 files / 289 tests; 3 × 289 in timezone runs. Build: dashboards split into own chunks (HR chunk with Recharts 413.85 kB / 117.58 kB gzip); main chunk 737.09 kB / 230.34 kB gzip, still above Vite's 500 kB warning (R-022, P9-T06) | P2 acceptance |
+| 2026-11-25 | Dev server `curl` of `/`, `/login`, `/forgot-password`, `/reset-password?token=…`, `/invite?token=…`, `/dashboard/hr`, `/profile` and key modules | All 200; no errors in log; server stopped. Not a visual check | P2 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -742,3 +754,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T08: architecture guide + lint-enforced import boundaries (no empty folders) | P1-T08 | None | P1-T09 |
 | 2026-11-25 | P1-T09: validated env module (dev defaults, strict production) + `.env.example` | P1-T09 | None | P1-T10 |
 | 2026-11-25 | P1-T10…T17 implemented and verified (also from a clean copy); P1-T18 automated part done | P1-T10–T17 | P1-T18 manual browser check pending (no browser available) | User visual check, then Phase 2 |
+| 2026-11-25 | Phase 2 implemented and verified: auth (login, reset, invitations, JWT session D-078/D-079, cross-tab), guards, role nav, six dashboards; tests found and fixed a redirect race and a service-instance flaw | P2-T01…T20 | Manual browser checks pending (user); Q-AUTH-01…04 provisional (D-081) | Phase 3 (Q-ORG-* first) |

@@ -1,5 +1,5 @@
-// Application shell (P1-T14): sidebar, top bar, breadcrumbs, search, notifications,
-// user menu, mock-mode badge and responsive mobile navigation.
+// Application shell (P1-T14, P2-T11): role-aware sidebar, top bar, breadcrumbs, search,
+// notifications, user menu, mock-mode badge and responsive mobile navigation.
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { Outlet } from 'react-router'
@@ -12,6 +12,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { navigationForRole } from '@/app/navigation'
+import { useCurrentUser } from '@/features/authentication'
 import { services, type ServiceMode } from '@/services/registry'
 import { AppBreadcrumbs } from './shell/app-breadcrumbs'
 import { Brand } from './shell/brand'
@@ -22,6 +24,8 @@ import { SidebarNav } from './shell/sidebar-nav'
 import { UserMenu } from './shell/user-menu'
 
 export function AppLayout({ serviceMode = services.mode }: { serviceMode?: ServiceMode }) {
+  const user = useCurrentUser()
+  const sections = navigationForRole(user.role)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const closeMobileNav = () => setMobileNavOpen(false)
 
@@ -39,7 +43,7 @@ export function AppLayout({ serviceMode = services.mode }: { serviceMode?: Servi
           <Brand />
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-4">
-          <SidebarNav />
+          <SidebarNav sections={sections} />
         </div>
       </aside>
 
@@ -65,7 +69,7 @@ export function AppLayout({ serviceMode = services.mode }: { serviceMode?: Servi
                 <Brand onNavigate={closeMobileNav} />
               </SheetHeader>
               <div className="overflow-y-auto px-2 py-2">
-                <SidebarNav onNavigate={closeMobileNav} />
+                <SidebarNav sections={sections} onNavigate={closeMobileNav} />
               </div>
             </SheetContent>
           </Sheet>
