@@ -87,6 +87,7 @@ pnpm preview      # serve the production build (needs env vars: production build
 pnpm format       # Prettier --write (format:check to verify); ignores src/components/ui/ and *.md
 pnpm test         # Vitest (jsdom); also test:watch, test:coverage
 pnpm test:tz      # whole suite with TZ=America/Los_Angeles (timezone independence)
+pnpm test:timezones # whole suite under UTC, America/Los_Angeles and Asia/Karachi
 ```
 
 **Before finishing any task:** `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.

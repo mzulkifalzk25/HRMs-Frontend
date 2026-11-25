@@ -12,18 +12,19 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phase 1 in progress. Toolchain complete: Vite + React + TS 7, Tailwind v4 tokens, shadcn/ui (Radix), core libraries, Vitest, oxlint, Prettier. All checks pass. |
-| Current phase | Phase 1: Project foundation |
-| Current task | P1-T09 done. |
-| Next task | P1-T10: centralized typed API client |
+| Overall state | Phase 1 implementation complete: toolchain, env, API client, service registry, Karachi time helpers, providers/router, app shell, feedback components, mock badge, README + API doc. 158 tests; all checks pass, also from a clean copy. |
+| Current phase | Phase 1: Project foundation (awaiting manual visual check) |
+| Current task | P1-T18: manual visual check of the shell (user) |
+| Next task | Phase 2 — P2-T01 (auth types and schemas). Phase 2 is partly blocked by Q-TECH-01 and Q-AUTH-* |
 | Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | P1-T01…T08 committed (`3de0df9`, `25f8e0c` added for P1-T08). Uncommitted: P1-T09 env files and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
+| Working tree | P1-T01…T09 committed (latest `da4cd14`). Uncommitted: P1-T10…T17 work and doc updates. Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
 
 ### Blockers
-- None blocking Phase 1.
+- None blocking Phase 1. P1-T18 needs a manual browser check by the user.
+- Phase 2 HTTP-mode session handling is blocked by Q-TECH-01 (token storage); password/invitation/session rules by Q-AUTH-01…04.
 - Several later tasks are blocked by open questions; see section D and `docs/DECISIONS.md` (Q-IDs).
 
 ### Unresolved issues
@@ -39,13 +40,15 @@ Update this section at the end of every session.
 
 - Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
 - Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
-- Next: **P1-T10** (central typed HTTP client in `src/services/api/`: base URL from `env.apiBaseUrl`, JSON, auth-header injection point, timeout/abort, normalized `ApiError`, refresh-on-401 hook as typed stub — real token handling BLOCKED by Q-TECH-01). Use native `fetch` (R-016, ask before adding axios). Tests with mocked `fetch`.
+- Check whether the user did the P1-T18 manual visual check (desktop ≥1024 px, mobile ~375 px); record the result.
+- Next: **Phase 2** starting with P2-T01. Before HTTP-mode auth work, ask the user to answer Q-TECH-01 (token storage) and Q-AUTH-01…04. Mock-mode auth can proceed.
+- Patterns to reuse: services via `src/services/registry.ts`; pages use `PageHeader`, `ErrorState` + `userMessage()`, skeletons, `EmptyState`; times via `src/lib/datetime.ts` only; routes get `handle: { breadcrumb }`; add nav items in `src/app/navigation.ts` (switch planned → available).
+- Testing notes: jsdom has no `ResizeObserver` (stubbed in `src/test/setup.ts`); use `renderRoutes`/`renderWithProviders` from `src/test/render.tsx`.
 - `pnpm preview` needs env vars set (production builds refuse missing values, D-076): e.g. create `.env.production.local` from `.env.example`.
 - Before finishing a task, run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
 - Testing notes: Vitest returns `''` for CSS imports (even `?raw`) — read files with `node:fs` in a `// @vitest-environment node` test. No Vitest globals: import `describe/it/expect` explicitly. Tailwind skips test files via `@source not` in `src/index.css`.
 - `@tanstack/react-table` agent-skills approval is **pending the user's decision** (R-020). Do not run `pnpm approve`.
 - shadcn: use `pnpm shadcn add <name>`, never `shadcn init` (see `CLAUDE.md` §7).
-- In P1-T06, consider moving the token contrast check (currently a scratchpad script) into a Vitest test so it guards future token edits.
 - Respect pnpm's `minimumReleaseAge`; never add `minimumReleaseAgeExclude` without user approval (R-017).
 - Do not commit or push unless asked.
 
@@ -171,7 +174,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
 **Dependencies:** Phase 0 complete.
-**Status:** In progress (P1-T01–T09 done; next P1-T10).
+**Status:** Implementation complete (P1-T01–T17 done and verified). Open: P1-T18 manual visual check at desktop/mobile widths.
 
 ### Tasks and subtasks
 
@@ -201,23 +204,25 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
   - [x] Typed env module validating `VITE_API_BASE_URL` and `VITE_USE_MOCK_API` with Zod; fails clearly if invalid. (`src/lib/env.ts`: pure `parseEnv()` + validated `env` export; `EnvError` lists every issue; http(s) URLs only, trailing slashes removed; boolean must be exactly `"true"`/`"false"`. Missing values default only outside production; production builds with missing values throw at startup. Imported first in `src/main.tsx`. Types in `src/types/vite-env.d.ts`. 16 tests.)
   - [x] `.env.example` with `VITE_API_BASE_URL=http://localhost:8000/api/v1` and `VITE_USE_MOCK_API=true`.
   - [x] Confirm `.env` / `.env.local` are ignored by Git. (`git check-ignore`: `.env`, `.env.local`, `.env.development`, `.env.production` ignored; `.env.example` not ignored.)
-- [ ] **P1-T10** Centralized typed API client.
-  - [ ] Base URL, JSON handling, auth header injection point, timeout/abort support.
-  - [ ] Normalized `ApiError` type (status, code, message, field errors).
-  - [ ] Refresh-on-401 hook point (implementation blocked by Q-TECH-01; leave a typed interface and a documented stub).
-- [ ] **P1-T11** Service-contract pattern and service registry.
-  - [ ] Pattern: `XService` interface in `features/<x>/api/`, `x.http.ts`, `x.mock.ts`, and a registry selecting by `VITE_USE_MOCK_API`. (Registry location `src/services/registry.ts`, shared mock infrastructure in `src/services/mock/`; see `docs/ARCHITECTURE.md` §3.)
-  - [ ] One reference implementation (e.g., a `HealthService`) proving the swap works.
-- [ ] **P1-T12** Time/date library for `Asia/Karachi`.
-  - [ ] Pure helpers: convert instant → Karachi wall-clock, Karachi calendar date of an instant, format helpers.
-  - [ ] Constant `APP_TIMEZONE = "Asia/Karachi"` in `src/constants`.
-  - [ ] Tests pass when process timezone is UTC, `America/Los_Angeles` and `Asia/Karachi`.
-- [ ] **P1-T13** Providers and router skeleton: QueryClientProvider, router, error boundary, toast provider.
-- [ ] **P1-T14** Application shell (static, role-agnostic for now): sidebar, top nav, breadcrumbs, user menu placeholder, notification center placeholder, global search placeholder, responsive mobile navigation.
-- [ ] **P1-T15** Shared feedback components: skeleton, empty state, error state, confirmation dialog, page header.
-- [ ] **P1-T16** Mock-mode indicator: persistent visible "Mock data" badge when `VITE_USE_MOCK_API=true`.
-- [ ] **P1-T17** Documentation: update `README.md` (setup, scripts, env, mock mode, structure) without removing existing content; create `docs/API_INTEGRATION.md` skeleton (base URL, env vars, conventions placeholder sections to be filled as contracts are defined).
+- [x] **P1-T10** Centralized typed API client. (2026-11-25: `src/services/api/` — `http-client.ts`, `api-error.ts`, shared `apiClient`. Native fetch (R-016). 25 tests.)
+  - [x] Base URL, JSON handling, auth header injection point, timeout/abort support. (Relative paths only, so tokens never go to other origins; query arrays repeated, empty values dropped; FormData passthrough; 204 → undefined; optional Zod response validation; default 20 s timeout + caller `AbortSignal`.)
+  - [x] Normalized `ApiError` type (status, code, message, field errors). (DRF `detail`, serializer field errors, `non_field_errors`, proposed `{error:{…}}` envelope; network/timeout/aborted/invalid_response codes; `isRetryable`; `userMessage()` shows only user-safe text.)
+  - [x] Refresh-on-401 hook point (implementation blocked by Q-TECH-01; leave a typed interface and a documented stub). (`AuthHooks` + `setAuthHooks`: one shared refresh for concurrent 401s, single retry, `onSessionExpired`; `auth:false` for public endpoints. No token storage implemented.)
+- [x] **P1-T11** Service-contract pattern and service registry. (2026-11-25: `src/services/registry.ts` (`createServices`, `services`, `mode`), reference `HealthService` in `src/services/health/` (contract + Zod schema, `.http.ts`, `.mock.ts`), `src/services/mock/latency.ts` (abortable simulated latency). 7 tests.)
+  - [x] Pattern: `XService` interface in `features/<x>/api/`, `x.http.ts`, `x.mock.ts`, and a registry selecting by `VITE_USE_MOCK_API`. (Registry location `src/services/registry.ts`, shared mock infrastructure in `src/services/mock/`; see `docs/ARCHITECTURE.md` §3.)
+  - [x] One reference implementation (e.g., a `HealthService`) proving the swap works. (Tests: mock vs HTTP chosen by flag, same contract schema for both, HTTP rejects contract-breaking responses. Overview page consumes it through a TanStack Query hook.)
+- [x] **P1-T12** Time/date library for `Asia/Karachi`. (2026-11-25: `src/lib/datetime.ts`, 32 tests.)
+  - [x] Pure helpers: convert instant → Karachi wall-clock, Karachi calendar date of an instant, format helpers. (`toDate` rejects offset-less strings; `toAppZone`, `appDateKey`, `appTimeKey`, `msSinceAppMidnight` (keeps ms for exact boundaries), `appOffset`, `toAppIsoString`, `appWallClockToInstant`; display formatters with provisional formats (Q-TECH-04). Offsets from IANA rules — verified +06:00 during Pakistan's 2009 DST.)
+  - [x] Constant `APP_TIMEZONE = "Asia/Karachi"` in `src/constants`. (`src/constants/app.ts`, plus `APP_NAME`, `DISPLAY_FORMATS`.)
+  - [x] Tests pass when process timezone is UTC, `America/Los_Angeles` and `Asia/Karachi`. (`pnpm test:timezones`; also checked under `Pacific/Kiritimati`.)
+- [x] **P1-T13** Providers and router skeleton: QueryClientProvider, router, error boundary, toast provider. (2026-11-25: `src/app/providers/` — `query-client.ts` (retries only network/timeout/429/5xx, max 2; mutations never retried), `app-providers.tsx` (QueryClient, TooltipProvider, Toaster), `app-error-boundary.tsx`; `src/app/router/` — route table, browser router, route error page, not-found page, typed route `handle` for breadcrumbs; sonner 2.0.8 with token-styled `Toaster` (shadcn's sonner wrapper avoided: needs next-themes). `App.tsx`/`App.test.tsx` placeholders removed. Tests: retry policy, both error boundaries (no internal message leaks), routing.)
+- [x] **P1-T14** Application shell (static, role-agnostic for now): sidebar, top nav, breadcrumbs, user menu placeholder, notification center placeholder, global search placeholder, responsive mobile navigation. (2026-11-25: `src/app/layouts/app-layout.tsx` + `shell/`: skip link, fixed desktop sidebar, sticky top bar, Sheet-based mobile nav, breadcrumbs from route handles, disabled search with an explanation, notification and account placeholders that say when they arrive, planned modules shown as non-link entries with their phase (D-077). Shadcn primitives added: sheet, dropdown-menu, separator, input, skeleton, alert-dialog, badge, tooltip, breadcrumb (no CSS/package changes). 10 shell tests in jsdom. **Not visually checked in a browser** — see P1-T18.)
+- [x] **P1-T15** Shared feedback components: skeleton, empty state, error state, confirmation dialog, page header. (2026-11-25: `src/components/feedback/` — `EmptyState`, `ErrorState` (role=alert, retry), `ConfirmDialog` (destructive style, optional mandatory trimmed reason, pending state), `CardSkeleton`/`ListSkeleton`, `Toaster`; `src/components/shared/page-header.tsx`. 9 tests.)
+- [x] **P1-T16** Mock-mode indicator: persistent visible "Mock data" badge when `VITE_USE_MOCK_API=true`. (2026-11-25: `shell/mock-mode-badge.tsx` driven by `services.mode`; a real button so keyboard users get the tooltip; full explanation in its accessible name; absent in HTTP mode. 3 tests.)
+- [x] **P1-T17** Documentation: update `README.md` (setup, scripts, env, mock mode, structure) without removing existing content; create `docs/API_INTEGRATION.md` skeleton (base URL, env vars, conventions placeholder sections to be filled as contracts are defined). (2026-11-25: README keeps its original `# HRMs` heading; API doc labels each item Implemented / Proposed / Open; first endpoint `GET health/` (Proposed).)
 - [ ] **P1-T18** Foundation verification run: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and a manual dev-server check of the shell at desktop and mobile widths.
+  - [x] Automated checks in the repo and in a simulated clean clone (no `node_modules`, no `.env`): typecheck, lint, format:check, test (158), test:timezones (3 × 158), build; `pnpm dev` serves the app. (2026-11-25, section F.)
+  - [ ] **Manual visual check at desktop and mobile widths — not done**: no browser was available in the Claude Code session. Needs the user (`pnpm dev`, check ≥1024 px and ~375 px), or Playwright later (R-004).
 
 ### Required tests
 - Env module: valid values, missing values, invalid boolean.
@@ -645,6 +650,17 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P1-T08 | `.oxlintrc.json`, `CLAUDE.md`, `docs/DECISIONS.md` | modified | Import-boundary and no-cycle lint rules; links to ARCHITECTURE.md; D-075 |
 | 2026-11-25 | P1-T09 | `src/lib/env.ts`, `src/lib/env.test.ts`, `src/types/vite-env.d.ts`, `.env.example` | created | Typed env module, tests, env types, example file |
 | 2026-11-25 | P1-T09 | `src/main.tsx`, `tsconfig.test.json`, `CLAUDE.md`, `docs/DECISIONS.md` | modified | Env validated at startup; test tsconfig includes `src/types`; preview note; D-076, R-021 |
+| 2026-11-25 | P1-T10 | `src/services/api/{api-error,http-client,index}.ts`, `src/services/api/http-client.test.ts` | created | HTTP client, ApiError, tests |
+| 2026-11-25 | P1-T11 | `src/services/registry.ts`, `src/services/registry.test.ts`, `src/services/health/{health.service,health.http,health.mock}.ts`, `src/services/mock/latency.ts` | created | Registry and reference service |
+| 2026-11-25 | P1-T12 | `src/constants/app.ts`, `src/lib/datetime.ts`, `src/lib/datetime.test.ts` | created | Karachi time helpers; `package.json` gains `test:timezones` |
+| 2026-11-25 | P1-T13 | `src/app/providers/{query-client,app-providers,app-error-boundary}.tsx?`, `src/app/router/{routes.tsx,router.ts,route-handle.ts,route-error-page.tsx,not-found-page.tsx}`, `src/components/feedback/toaster.tsx`, tests, `src/test/render.tsx` | created | Providers, router, error handling |
+| 2026-11-25 | P1-T13 | `src/App.tsx`, `src/App.test.tsx` | deleted | Temporary placeholders replaced by router + shell (as planned) |
+| 2026-11-25 | P1-T13 | `src/main.tsx`, `src/test/setup.ts`, `.oxlintrc.json`, `package.json`, `pnpm-lock.yaml` | modified | Mount providers/router; ResizeObserver stub; a11y rule scoped for generated UI; sonner |
+| 2026-11-25 | P1-T14/T16 | `src/app/navigation.ts`, `src/app/layouts/app-layout.tsx`, `src/app/layouts/shell/*`, `src/app/app-shell.test.tsx`, 9 `src/components/ui/*.tsx` (generated) | created | App shell and mock badge |
+| 2026-11-25 | P1-T15 | `src/components/feedback/{empty-state,error-state,confirm-dialog,loading-skeletons}.tsx`, `src/components/shared/page-header.tsx`, `src/components/feedback/feedback.test.tsx` | created | Feedback components |
+| 2026-11-25 | P1-T13 | `src/features/dashboard/{index.ts,api/use-system-health.ts,pages/overview-page.tsx,pages/overview-page.test.tsx}` | created | Phase 1 landing page exercising the full data path |
+| 2026-11-25 | P1-T17 | `README.md`, `docs/ARCHITECTURE.md` | modified | Full README (original heading kept); architecture map updated |
+| 2026-11-25 | P1-T17 | `docs/API_INTEGRATION.md` | created | API integration skeleton |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -696,6 +712,17 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `vitest run src/lib/env.test.ts` | 16/16 pass first run (valid, missing dev/prod, empty-as-missing, 5 invalid booleans, 4 invalid URLs incl. `javascript:`, combined errors) | P1-T09 |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:tz`, `build` (after P1-T09) | All exit 0; 52/52 tests in both runs | P1-T09 |
 | 2026-11-25 | `pnpm build` without env; and with `VITE_API_BASE_URL=https://hr.example.test/api/v1 VITE_USE_MOCK_API=false` | No-env bundle contains the production check; env bundle inlines the configured URL | P1-T09 (runtime throw itself covered by unit tests, not run in a browser) |
+| 2026-11-25 | `vitest run src/services/api` | 25/25 pass first run (URL building, JSON/FormData/204, schema validation, DRF/envelope error normalization, network/timeout/abort, bearer token, single shared refresh, single retry, auth:false, setAuthHooks) | P1-T10 |
+| 2026-11-25 | `vitest run src/services` | 32/32 (client + registry: mock vs HTTP by flag, shared contract schema, contract violation rejected, abortable latency) | P1-T11 |
+| 2026-11-25 | `node` check of `TZDate(…,'Asia/Karachi')` for 2009-06-01 | `+06:00` (Pakistan DST 2009); 2026 dates `+05:00` | P1-T12: never hardcode +05:00 |
+| 2026-11-25 | `TZ=<zone> vitest run src/lib/datetime.test.ts` for UTC, America/Los_Angeles, Asia/Karachi, Pacific/Kiritimati | 32/32 in all four | P1-T12 |
+| 2026-11-25 | `pnpm shadcn add sheet dropdown-menu separator input skeleton alert-dialog badge tooltip breadcrumb` | 9 files created; `index.css` and `package.json` unchanged (diff) | P1-T13–T15 |
+| 2026-11-25 | `pnpm add sonner@^2.0.0` | 2.0.8 (repo emilkowalski/sonner); no exclusions; no new permission requests | P1-T13 |
+| 2026-11-25 | `pnpm lint` after shell | 3 a11y warnings: focusable `span` badge (fixed: real button), `role=status` (removed), shadcn breadcrumb `role=link` (rule scoped off for `src/components/ui/**`) → 0 warnings | P1-T14/T16 |
+| 2026-11-25 | `vitest run src/app src/features` | First: 1 failure, `ResizeObserver is not defined` (jsdom); stub added in test setup → 35/35 | P1-T13–T16 |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:timezones`, `build` (repo) | All exit 0; 13 files / 158 tests; 3 × 158 in timezone runs; build JS 651.60 kB (203.53 kB gzip), CSS 52.96 kB; Vite warns chunk > 500 kB (single route, no code splitting yet → P9-T06, R-022) | P1-T18 |
+| 2026-11-25 | Clean-copy check: `git ls-files -co --exclude-standard` copied to empty dir (88 files, no node_modules, no .env); `pnpm install --frozen-lockfile`; all six checks | All exit 0; 158 tests in each run | P1-T18 acceptance "runs from a clean clone" |
+| 2026-11-25 | `pnpm dev` in clean copy + `curl` `/`, `/src/main.tsx`, `/src/lib/env.ts`; repo dev server + deep link `/some/deep/link` | All 200 (SPA fallback works); no errors in logs; servers stopped (ports closed) | P1-T18 (not a visual check) |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -713,3 +740,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T07: Prettier configured; toolchain complete (P1-T02 closed) | P1-T07, P1-T02 | None | P1-T08 |
 | 2026-11-25 | P1-T08: architecture guide + lint-enforced import boundaries (no empty folders) | P1-T08 | None | P1-T09 |
 | 2026-11-25 | P1-T09: validated env module (dev defaults, strict production) + `.env.example` | P1-T09 | None | P1-T10 |
+| 2026-11-25 | P1-T10…T17 implemented and verified (also from a clean copy); P1-T18 automated part done | P1-T10–T17 | P1-T18 manual browser check pending (no browser available) | User visual check, then Phase 2 |
