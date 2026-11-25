@@ -26,3 +26,8 @@ Thumbs.db
 
 # Local editor configuration
 .vscode/
+
+# Vite / local overrides / other editors (added in P1-T02)
+dist-ssr/
+*.local
+.idea/

@@ -1,0 +1,188 @@
+/*
+ * FormbaxHR design tokens: the single source for colour, type, radius and shadow (P1-T03).
+ *
+ * Tailwind CSS v4 is configured CSS-first (no tailwind.config.js).
+ * Variable names follow the shadcn/ui convention (--background, --primary, ...)
+ * so components added in P1-T04 use these tokens directly.
+ *
+ * Light theme only (D-072). Colours are OKLCH. Text/background pairs are
+ * checked for WCAG AA contrast (results in docs/IMPLEMENTATION_PLAN.md, section F).
+ *
+ * Usage examples:
+ *   bg-background text-foreground   app canvas
+ *   bg-card border-border           cards / panels
+ *   bg-primary text-primary-foreground
+ *   bg-success-subtle text-success-subtle-foreground   status badges
+ *
+ * IMPORTANT: do not run `shadcn init` again. It overwrites these tokens with its
+ * neutral palette (verified in a dry run, P1-T04). Use `pnpm shadcn add <component>`
+ * and diff this file afterwards.
+ */
+@import 'tailwindcss';
+/* Animation utilities used by shadcn/ui components (dialogs, menus, sheets). */
+@import 'tw-animate-css';
+/* shadcn/ui variants (data-open, data-closed, ...) and keyframes. Build-time only. */
+@import 'shadcn/tailwind.css';
+/* Do not generate classes that only appear in tests (keeps production CSS lean). */
+@source not './**/*.test.{ts,tsx}';
+@source not './test';
+
+:root {
+  /* Surfaces */
+  --background: oklch(0.982 0.003 264); /* cool neutral canvas */
+  --foreground: oklch(0.22 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 265);
+
+  /* Brand: blue/indigo primary */
+  --primary: oklch(0.5 0.19 268);
+  --primary-foreground: oklch(0.985 0.003 264);
+  --secondary: oklch(0.955 0.012 266);
+  --secondary-foreground: oklch(0.3 0.04 266);
+  --accent: oklch(0.95 0.025 268);
+  --accent-foreground: oklch(0.38 0.14 268);
+
+  /* Neutral / gray */
+  --muted: oklch(0.962 0.005 264);
+  --muted-foreground: oklch(0.5 0.02 264);
+
+  /* Semantic: red */
+  --destructive: oklch(0.54 0.2 27);
+  --destructive-foreground: oklch(0.985 0.003 264);
+  --destructive-subtle: oklch(0.965 0.02 20);
+  --destructive-subtle-foreground: oklch(0.45 0.16 27);
+
+  /* Semantic: green */
+  --success: oklch(0.53 0.13 155);
+  --success-foreground: oklch(0.985 0.003 264);
+  --success-subtle: oklch(0.962 0.035 155);
+  --success-subtle-foreground: oklch(0.4 0.1 155);
+
+  /* Semantic: amber (dark text on amber for contrast) */
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.28 0.06 60);
+  --warning-subtle: oklch(0.97 0.045 85);
+  --warning-subtle-foreground: oklch(0.45 0.11 60);
+
+  /* Semantic: blue */
+  --info: oklch(0.53 0.15 240);
+  --info-foreground: oklch(0.985 0.003 264);
+  --info-subtle: oklch(0.96 0.025 240);
+  --info-subtle-foreground: oklch(0.43 0.13 245);
+
+  /* Lines and focus */
+  --border: oklch(0.912 0.007 264);
+  --input: oklch(0.66 0.012 264); /* >= 3:1 on card for form-control boundaries (WCAG 1.4.11) */
+  --ring: oklch(0.58 0.17 268);
+
+  /* Charts (Recharts) */
+  --chart-1: oklch(0.5 0.19 268); /* indigo */
+  --chart-2: oklch(0.6 0.11 185); /* teal */
+  --chart-3: oklch(0.76 0.15 75); /* amber */
+  --chart-4: oklch(0.6 0.18 15); /* rose */
+  --chart-5: oklch(0.65 0.13 235); /* sky */
+
+  /* App shell sidebar */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.3 0.025 265);
+  --sidebar-primary: oklch(0.5 0.19 268);
+  --sidebar-primary-foreground: oklch(0.985 0.003 264);
+  --sidebar-accent: oklch(0.955 0.02 268);
+  --sidebar-accent-foreground: oklch(0.38 0.14 268);
+  --sidebar-border: oklch(0.912 0.007 264);
+  --sidebar-ring: oklch(0.58 0.17 268);
+
+  /* Shape */
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius scale derived from --radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Typography: system UI stack (no external font requests). Swap here to change app-wide. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-heading: var(--font-sans);
+
+  /* Subtle elevation */
+  --shadow-xs: 0 1px 2px 0 oklch(0.22 0.02 265 / 0.05);
+  --shadow-sm: 0 1px 3px 0 oklch(0.22 0.02 265 / 0.07), 0 1px 2px -1px oklch(0.22 0.02 265 / 0.05);
+  --shadow-md:
+    0 4px 8px -2px oklch(0.22 0.02 265 / 0.08), 0 2px 4px -2px oklch(0.22 0.02 265 / 0.05);
+  --shadow-lg:
+    0 12px 24px -6px oklch(0.22 0.02 265 / 0.1), 0 4px 8px -4px oklch(0.22 0.02 265 / 0.05);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Tabular numbers for times, durations and balances: add class="tabular-nums" where needed. */
+}
