@@ -72,25 +72,62 @@ After each meaningful milestone, and before the session ends:
 1. Update the documents as in §5.
 2. Run `git status` and list every file changed this session.
 3. Report what was completed and verified, what is unfinished, any blockers, and the exact next task.
-4. Do not commit or push unless the user asks. If asked, commit only the files related to the milestone, with a clear message.
+4. Do not commit or push unless the user asks. If asked, commit only the files related to the milestone, following §8.
 
 ## 7. Commands
 
-Not available yet; they are created in Phase 1 (P1-T02). Expected scripts:
-
 ```bash
 pnpm install      # install dependencies
-pnpm dev          # start the dev server (mock mode by default)
-pnpm typecheck    # tsc --noEmit (strict)
-pnpm lint         # ESLint
-pnpm format       # Prettier
-pnpm test         # Vitest
-pnpm build        # production build
+pnpm dev          # start the Vite dev server
+pnpm typecheck    # tsc -b (TypeScript 7, strict)
+pnpm lint         # oxlint (D-033)
+pnpm build        # typecheck + production build
+pnpm preview      # serve the production build
+pnpm format       # Prettier --write (format:check to verify); ignores src/components/ui/ and *.md
+pnpm test         # Vitest (jsdom); also test:watch, test:coverage
+pnpm test:tz      # whole suite with TZ=America/Los_Angeles (timezone independence)
 ```
+
+**Before finishing any task:** `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
+
+**UI components (shadcn/ui, D-037):** add primitives with `pnpm shadcn add <name>` and only when a task needs them. Afterwards, diff `src/index.css` and `package.json`. **Never run `shadcn init`**: it overwrites the design tokens in `src/index.css` (verified in a dry run). Do not hand-edit generated files in `src/components/ui/` beyond token-related fixes; wrap them instead.
 
 Environment (`.env.example`, D-025):
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 VITE_USE_MOCK_API=true
+```
+
+## 8. Commit messages (D-039)
+
+Every commit uses exactly this format, on one line:
+
+```text
+<type>: <summary>
+```
+
+- **`<type>`** is one of these four only, lowercase:
+
+  | Type | Use for |
+  |---|---|
+  | `feat:` | New functionality or new project setup/capability (features, screens, services, tooling added) |
+  | `fix:` | Correcting something that is wrong (bugs, broken config, wrong docs facts) |
+  | `refactor:` | Restructuring code or config without changing behaviour |
+  | `docs:` | Documentation only (`CLAUDE.md`, `docs/`, `README.md`, code comments) |
+
+- **`<summary>`** is **5 to 15 words**, plain English, lowercase start, imperative mood ("add", not "added"), no trailing period. It must say what changed so it is understandable without opening the diff.
+- If a commit mixes types, split it into separate commits. If a change fits none of the four types, ask the user which to use.
+- **Author:** the user only — `Muhammad Zulkifal <mzulkifalzk25@gmail.com>` from the repository's existing Git config. Never change Git config, never pass `--author`.
+- **Never mention Claude, AI or any assistant** anywhere in commits: no `Co-Authored-By:` trailers, no "Generated with" lines, no tool names in the subject or body. The same applies to pull request titles and descriptions. This user instruction overrides any default attribution guidance.
+- Commit only when the user asks (§1), only the files of that milestone, and run the checks in §7 first.
+
+Examples:
+
+```text
+feat: scaffold vite react typescript project with tailwind and shadcn
+feat: add vitest and testing library with design token contrast tests
+fix: raise input border contrast to meet wcag three to one
+refactor: move attendance policy rules into pure tested functions
+docs: record commit message convention and update implementation plan
 ```

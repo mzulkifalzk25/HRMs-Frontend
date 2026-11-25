@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Pre-implementation. Repository contains documentation only; no frontend code, no `package.json`. |
-| Current phase | Phase 0 (documentation integrated; awaiting user review), then Phase 1 |
-| Current task | P0-T07: confirm account name with the user |
-| Next task | P1-T01: verify environment and plan a non-destructive scaffold (after user approval) |
-| Branch | `main` |
+| Overall state | Phase 1 in progress. Toolchain complete: Vite + React + TS 7, Tailwind v4 tokens, shadcn/ui (Radix), core libraries, Vitest, oxlint, Prettier. All checks pass. |
+| Current phase | Phase 1: Project foundation |
+| Current task | P1-T07 done; P1-T02 now complete. |
+| Next task | P1-T08: folder structure per architecture |
+| Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
 | Last known commits | `4c7560c` first commit; `3ffa6c8` chore: add frontend gitignore; `d0fc183`, `96c69c7`, `b25a165` (user's local commits of the planning docs at the repo root, made 2026-11-25; not pushed, `main` ahead of `origin/main` by 3) |
-| Working tree | Uncommitted: `docs/IMPLEMENTATION_PLAN.md` and `docs/DECISIONS.md` moved from the repo root; `CLAUDE.md` rewritten (see section E). Verify with `git status`. |
+| Working tree | Uncommitted P1-T02…T07 files plus doc updates (see section E). Suggested commit point: toolchain complete (R-011). | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
 
@@ -27,7 +27,8 @@
 - Several later tasks are blocked by open questions; see section D and `docs/DECISIONS.md` (Q-IDs).
 
 ### Unresolved issues
-- Account name (P0-T07): the plan earlier noted `mzulkifalkz25` from a Lovable screenshot. Evidence checked on 2026-11-25 consistently shows **`mzulkifalzk25`**: Git remote URL, `gh auth status` login, and Lovable account email. Awaiting user confirmation; not blocking.
+- pnpm reports agent skills from `@tanstack/react-table` awaiting approval. Not approved by Claude Code; user decision (R-020).
+- Account name resolved: `mzulkifalzk25` (D-035).
 - The `CLAUDE.md` originally supplied was a byte-identical copy of `DECISIONS.md` (same SHA-256), so the intended instructions file was missing. `CLAUDE.md` was rewritten from the documented requirements. If the user has the original intended version, compare and merge (Q-PROJ-01).
 
 ---
@@ -36,10 +37,15 @@
 
 Update this section at the end of every session.
 
-- Start by following the session start protocol in `CLAUDE.md` §2.
-- Check whether the user has reviewed the documentation integration of 2026-11-25 and whether the doc move/rewrite was committed (`git status`, `git log`).
-- Record the user's answers to P0-T07, Q-PROJ-01, Q-PROJ-02 and Q-GIT-01 if given.
-- Only after explicit user approval, begin **Phase 1**: P1-T01 (environment verification and scaffold planning). Present the proposed scaffold approach to the user before running any scaffolding command, because the repository is non-empty and `.gitignore` / `README.md` / `CLAUDE.md` / `docs/` must be preserved.
+- Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
+- Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
+- Next: **P1-T08** (folder structure per D-024). Create only folders that receive real files in this or the next tasks; no placeholder files. Then P1-T09 (typed env + `.env.example`).
+- Before finishing a task, run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
+- Testing notes: Vitest returns `''` for CSS imports (even `?raw`) — read files with `node:fs` in a `// @vitest-environment node` test. No Vitest globals: import `describe/it/expect` explicitly. Tailwind skips test files via `@source not` in `src/index.css`.
+- `@tanstack/react-table` agent-skills approval is **pending the user's decision** (R-020). Do not run `pnpm approve`.
+- shadcn: use `pnpm shadcn add <name>`, never `shadcn init` (see `CLAUDE.md` §7).
+- In P1-T06, consider moving the token contrast check (currently a scratchpad script) into a Vitest test so it guards future token edits.
+- Respect pnpm's `minimumReleaseAge`; never add `minimumReleaseAgeExclude` without user approval (R-017).
 - Do not commit or push unless asked.
 
 ---
@@ -137,7 +143,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Understand the repository and fix the architecture and workflow.
 **Dependencies:** None.
-**Status:** In progress. P0-T01…T06 done and verified; P0-T07 awaits user confirmation.
+**Status:** Complete (2026-11-25).
 
 ### Tasks
 - [x] **P0-T01** Inspect repository state (verified by command in Claude Code on 2026-11-25: nearly empty; clean; on `main`; no `package.json`, `src/`, Vite config or installed dependencies; Git history intact).
@@ -146,7 +152,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 - [x] **P0-T04** Identify unresolved business and technical decisions (listed in `docs/DECISIONS.md`).
 - [x] **P0-T05** Create `CLAUDE.md` (root) and `docs/DECISIONS.md`; expand this plan to nine phases. (Done 2026-11-25. The supplied `CLAUDE.md` duplicated `DECISIONS.md` and was rewritten; see section A.)
 - [x] **P0-T06** Verify the three tracking documents are in place, consistent with each other, and that `git status` shows only the expected files. (Verified 2026-11-25; see section F.)
-- [ ] **P0-T07** Confirm with the user the account-name discrepancy (`mzulkifalzk25` vs `mzulkifalkz25`) and record the answer. Evidence so far supports `mzulkifalzk25` (see section A).
+- [x] **P0-T07** Confirm with the user the account-name discrepancy (`mzulkifalzk25` vs `mzulkifalkz25`) and record the answer. (User confirmed `mzulkifalzk25` on 2026-11-25; D-035.)
 
 ### Required tests
 - No automated tests (documentation-only phase). Verification is by inspection: file locations, content hashes, internal links and `git status` (recorded in section F).
@@ -164,29 +170,30 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
 **Dependencies:** Phase 0 complete.
-**Status:** Not started.
+**Status:** In progress (P1-T01–T07 done; next P1-T08).
 
 ### Tasks and subtasks
 
-- [ ] **P1-T01** Verify environment and plan a non-destructive scaffold.
-  - [ ] Confirm Node/pnpm versions with commands.
-  - [ ] Check `git status` is clean (or only docs files).
-  - [ ] Propose scaffold method to user (scaffold in temp dir outside repo and merge; or an equivalent that never overwrites `.gitignore`, `README.md`, `.vscode`).
-- [ ] **P1-T02** Scaffold React + TypeScript + Vite using pnpm.
-  - [ ] `package.json` with `"packageManager"` field and scripts: `dev`, `build`, `preview`, `typecheck`, `lint`, `format`, `test`.
-  - [ ] `tsconfig` with `strict: true` and path alias `@/` → `src/` (alias choice recorded in DECISIONS).
-  - [ ] Existing `.gitignore` and `README.md` preserved; `.gitignore` only extended if something is missing (show diff).
-  - [ ] Only `pnpm-lock.yaml` is present (no npm/yarn lockfiles).
-- [ ] **P1-T03** Configure Tailwind CSS and design tokens.
-  - [ ] Blue/indigo primary; semantic green, red, amber, blue, gray; neutral light background.
-  - [ ] Typography scale, spacing, radius, subtle shadows defined in one place.
-  - [ ] Tailwind major version choice recorded in DECISIONS.
-- [ ] **P1-T04** Install and configure shadcn/ui and Lucide React.
-  - [ ] Base primitives added only as needed (button, input, label, card, dialog, dropdown, sheet, table, badge, skeleton, toast, tabs, select, calendar/date picker as needed later).
-- [ ] **P1-T05** Install core libraries: React Router, TanStack Query, TanStack Table, React Hook Form, Zod (+ resolver), Recharts, date/timezone library (library choice recorded in DECISIONS).
-- [ ] **P1-T06** Test tooling: Vitest + React Testing Library + jsdom; coverage config; test setup file.
-  - [ ] Tests run with `TZ` set to a non-Karachi timezone in at least one CI-style script to prove timezone independence (see Phase 4).
-- [ ] **P1-T07** Lint and format: ESLint (TypeScript, React hooks, a11y plugin), Prettier; scripts wired.
+- [x] **P1-T01** Verify environment and plan a non-destructive scaffold.
+  - [x] Confirm Node/pnpm versions with commands. (2026-11-25: Node v26.13.0, pnpm 12.16.1; all core packages' `engines` accept Node 26.)
+  - [x] Check `git status` is clean (or only docs files). (2026-11-25: only staged doc changes.)
+  - [x] Propose scaffold method to user (scaffold in temp dir outside repo and merge; or an equivalent that never overwrites `.gitignore`, `README.md`, `.vscode`). Proposal presented and approved 2026-11-25 (scratchpad scaffold with `create-vite@9.3.4 --template react-ts`; TS 7 + oxlint per D-033).
+- [x] **P1-T02** Scaffold React + TypeScript + Vite using pnpm. (Completed 2026-11-25 when P1-T07 added `format`.)
+  - [x] `package.json` with `"packageManager"` field and scripts: `dev`, `build`, `preview`, `typecheck`, `lint`, `format`, `test`. (2026-11-25: `packageManager: pnpm@12.16.1`, `engines.node >=26`, `.nvmrc` = 26; all seven scripts exist, plus `format:check`, `test:watch`, `test:coverage`, `test:tz`.)
+  - [x] `tsconfig` with `strict: true` and path alias `@/` → `src/` (alias choice recorded in DECISIONS). (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride` in `tsconfig.app.json`; alias in tsconfig `paths` and `vite.config.ts`; R-006. Alias exercised by `@/components/ui/button` import in P1-T04.)
+  - [x] Existing `.gitignore` and `README.md` preserved; `.gitignore` only extended if something is missing (show diff). (Appended `dist-ssr/`, `*.local`, `.idea/`; template README and demo assets not copied.)
+  - [x] Only `pnpm-lock.yaml` is present (no npm/yarn lockfiles).
+- [x] **P1-T03** Configure Tailwind CSS and design tokens. (2026-11-25)
+  - [x] Blue/indigo primary; semantic green, red, amber, blue, gray; neutral light background. (`src/index.css`: shadcn-compatible variable names plus `success`/`warning`/`info`/`destructive` solid and `-subtle` variants; all 21 text/background pairs ≥ 4.5:1; input border 3.11:1 and ring 4.43:1 on card.)
+  - [x] Typography scale, spacing, radius, subtle shadows defined in one place. (`src/index.css` `@theme inline`: font stacks, radius scale from `--radius`, `shadow-xs…lg`; Tailwind's default type and spacing scales are kept.)
+  - [x] Tailwind major version choice recorded in DECISIONS. (D-036.)
+- [x] **P1-T04** Install and configure shadcn/ui and Lucide React. (2026-11-25, D-037.) `shadcn init` was dry-run in the scratchpad and **not** run in the repo because it overwrote the P1-T03 tokens; the equivalent setup was applied by hand: `components.json` (radix-nova), root `tsconfig.json` paths, `src/lib/utils.ts` (`cn`), CSS imports `tw-animate-css` + `shadcn/tailwind.css`, extra radius/heading tokens. Lucide used in the placeholder page.
+  - [x] Base primitives added only as needed (button, input, label, card, dialog, dropdown, sheet, table, badge, skeleton, toast, tabs, select, calendar/date picker as needed later). (Only `button` added, via `pnpm shadcn add button`; `index.css` and `package.json` unchanged by `add`. Others are added by the tasks that use them: P1-T13 toast, P1-T14 shell primitives, P1-T15 skeleton/dialog.)
+- [x] **P1-T05** Install core libraries: React Router, TanStack Query, TanStack Table, React Hook Form, Zod (+ resolver), Recharts, date/timezone library (library choice recorded in DECISIONS). (2026-11-25: react-router 8.5.2, @tanstack/react-query 5.108.4, @tanstack/react-table 9.3.1, react-hook-form 7.92.0, @hookform/resolvers 7.0.9, zod 4.6.7, recharts 3.11.1 + react-is 19.3.1 peer, date-fns 4.4.0 + @date-fns/tz 1.5.0 (D-038). All type-check under TS 7 strict; Karachi conversion verified under 4 process timezones.)
+  - Note for P3-T03: **TanStack Table v9** changed the API vs v8 — features are opt-in (`tableFeatures({ rowSortingFeature, ... })`) and `createColumnHelper<TFeatures, TData>()` takes two type arguments. Use v9 docs, not v8 examples.
+- [x] **P1-T06** Test tooling: Vitest + React Testing Library + jsdom; coverage config; test setup file. (2026-11-25: vitest 5.1.1 + @vitest/coverage-v8 5.1.1, jsdom 31.0.1, @testing-library/react 16.3.3 / dom 10.4.2 / user-event 14.6.13 / jest-dom 8.0.0. Config in `vite.config.ts` `test`; setup `src/test/setup.ts`; tests type-checked via `tsconfig.test.json`. Scripts `test`, `test:watch`, `test:coverage`, `test:tz`. 36 tests: App smoke, `cn`, contrast helper, 25 design-token contrast checks, TZ sanity.)
+  - [x] Tests run with `TZ` set to a non-Karachi timezone in at least one CI-style script to prove timezone independence (see Phase 4). (`pnpm test:tz` = `TZ=America/Los_Angeles vitest run`; `environment.test.ts` asserts the TZ took effect. POSIX shells only.)
+- [x] **P1-T07** Lint and format: oxlint (react, react-hooks, jsx-a11y, typescript; D-033), Prettier; scripts wired. (2026-11-25: prettier 3.10.1; `.prettierrc.json` = no semicolons, single quotes, trailing commas, 100 cols, LF; `.prettierignore` excludes `src/components/ui/` (shadcn-generated), `*.md`, lockfile, build/coverage output. Scripts `format`, `format:check`. Initial run reformatted 4 files, line wrapping only.)
 - [ ] **P1-T08** Create folder structure per architecture: `src/app/{router,providers,layouts,guards}`, `src/components/{ui,shared,tables,forms,charts,feedback}`, `src/features/{authentication,dashboard,employees,attendance,leaves,approvals,organization,imports,reports,notifications,audit,settings}`, `src/services/{api,auth,mock}`, `src/hooks`, `src/lib`, `src/types`, `src/constants`, `src/styles`.
   - [ ] Empty folders get only what is needed (no speculative files).
 - [ ] **P1-T09** Environment configuration.
@@ -623,6 +630,17 @@ Append entries; do not rewrite history.
 | 2026-11-25 | Planning | `docs/DECISIONS.md` | created | Awaiting placement and verification |
 | 2026-11-25 | Doc integration | `docs/IMPLEMENTATION_PLAN.md` | moved from repo root (content unchanged at move, SHA-256 verified), then modified | Status, next session, Phase 0 progress, per-phase Status lines, "Goal" → "Objectives", Phase 0 test note, logs |
 | 2026-11-25 | Doc integration | `docs/DECISIONS.md` | moved from repo root (SHA-256 verified), then modified | Added D-032, R-015, R-016, Q-GIT-01, Q-PROJ-01, Q-PROJ-02; R-003 status; D-011 verified; change log |
+| 2026-11-25 | P1-T02 | `package.json`, `pnpm-lock.yaml`, `.nvmrc`, `.oxlintrc.json`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`, `vite.config.ts`, `index.html`, `src/main.tsx`, `src/App.tsx`, `src/index.css` | created | Adapted from `create-vite@9.3.4` react-ts template (scaffolded in scratchpad) |
+| 2026-11-25 | P1-T02 | `.gitignore` | modified (append only) | Added `dist-ssr/`, `*.local`, `.idea/` |
+| 2026-11-25 | P1-T03 | `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `src/index.css`, `src/App.tsx` | modified | Tailwind v4 plugin, design tokens, token preview placeholder |
+| 2026-11-25 | P1-T04 | `components.json`, `src/lib/utils.ts`, `src/components/ui/button.tsx` | created | shadcn config, `cn` helper, Button (via `shadcn add`) |
+| 2026-11-25 | P1-T05 | `package.json`, `pnpm-lock.yaml` | modified | Core libraries added (no source changes) |
+| 2026-11-25 | P1-T06 | `tsconfig.test.json`, `src/test/setup.ts`, `src/test/color-contrast.ts`, `src/test/color-contrast.test.ts`, `src/test/design-tokens.test.ts`, `src/test/environment.test.ts`, `src/lib/utils.test.ts`, `src/App.test.tsx` | created | Test config, helpers and first tests |
+| 2026-11-25 | P1-T06 | `package.json`, `pnpm-lock.yaml`, `vite.config.ts`, `tsconfig.json`, `tsconfig.app.json`, `src/index.css` | modified | Test deps + scripts; Vitest config; test tsconfig reference; app tsconfig excludes tests; Tailwind `@source not` for tests |
+| 2026-11-25 | P1-T07 | `.prettierrc.json`, `.prettierignore` | created | Prettier config |
+| 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Commit message convention (`CLAUDE.md` §8, D-039) |
+| 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
+| 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
 
 ## F. VERIFICATION LOG
@@ -635,6 +653,37 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `sha256sum CLAUDE.md DECISIONS.md` (as supplied) | Identical hashes (`b98617a9…`) | Supplied `CLAUDE.md` was a copy of `DECISIONS.md` |
 | 2026-11-25 | `sha256sum docs/*.md` after move | Unchanged vs pre-move; `git hash-object` equals committed blobs `b90758b` (plan) and `0f4e116` (decisions) | Move lost no content |
 | 2026-11-25 | `git status`, `git log` | `main` ahead of `origin/main` by 3 (user commits `d0fc183`, `96c69c7`, `b25a165`); only doc files changed | No commit/push by Claude Code |
+| 2026-11-25 | `pnpm view <pkg> version engines.node` for core packages | vite 8.3.8, react 19.3.1, typescript 7.0.2, tailwindcss 4.3.5, shadcn 4.23.0, react-router 8.5.3, @tanstack/react-query 5.108.4, @tanstack/react-table 9.3.1, react-hook-form 7.92.0, zod 4.6.7, recharts 3.11.1, vitest 5.1.1, jsdom 31.0.1, eslint 10.15.0; all accept Node 26 | P1-T01 |
+| 2026-11-25 | `pnpm dlx create-vite@9.3.4 scaffold-p1 --template react-ts --no-interactive` (in scratchpad, outside repo; no install) | Succeeded; template uses oxlint and TS ~7.0.2; tsconfig has no explicit `strict` | P1-T01; nothing copied into repo |
+| 2026-11-25 | `pnpm view typescript-eslint peerDependencies` | `typescript >=4.8.4 <6.1.0` | Conflict recorded as Q-TECH-05 |
+| 2026-11-25 | `pnpm install` (first attempt) | pnpm auto-created `pnpm-workspace.yaml` with `minimumReleaseAgeExclude: @types/node@26.6.10` (published < 24 h) | Bypass removed; range relaxed to `^26.6.0`; `pnpm clean --lockfile --yes` + `pnpm install` resolved `@types/node@26.6.6` with no exclusions |
+| 2026-11-25 | `pnpm typecheck` | exit 0 | P1-T02, TS 7.0.2 |
+| 2026-11-25 | `pnpm lint` | exit 0, no findings | oxlint 1.95.0 |
+| 2026-11-25 | `oxlint -c .oxlintrc.json` on a scratchpad probe file (outside repo) | Reported rules-of-hooks error, exhaustive-deps error, jsx-a11y alt-text warning | Confirms config is active |
+| 2026-11-25 | `pnpm build` | exit 0; `dist/assets/index-*.js` 219.72 kB (68.68 kB gzip) | Vite 8.3.8 |
+| 2026-11-25 | `pnpm add -D tailwindcss@^4.3.0 @tailwindcss/vite@^4.3.0` | Installed 4.3.5; no release-age exclusion needed | P1-T03 |
+| 2026-11-25 | WCAG contrast script (OKLCH → sRGB, scratchpad) over `src/index.css` tokens | First run: `info` 4.46:1 FAIL, `input` 1.44:1. After fix (`--info` L 0.53, `--input` L 0.66): all 21 text pairs PASS (min 4.75:1); input 3.11:1; ring 4.43:1 | P1-T03 |
+| 2026-11-25 | `pnpm typecheck`, `pnpm lint`, `pnpm build` (after P1-T03) | All exit 0; CSS 11.79 kB (3.13 kB gzip); token utilities (`bg-primary`, `bg-success-subtle`, `shadow-sm`, …) present in built CSS | P1-T03 |
+| 2026-11-25 | `shadcn@4.23.0 init -t vite -b radix -p nova` in scratchpad copy (dry run) | Wrote `components.json`, `button.tsx`, `utils.ts`; **overwrote P1-T03 colour tokens** with neutral values (input border back to ~1.3:1), added Geist font, dark block, and `shadcn` as a runtime dependency | Not applied to repo; setup done by hand |
+| 2026-11-25 | `pnpm view cn/shadcn/tw-animate-css/radix-ui repository maintainers` | `cn` and `shadcn` published by shadcn from `github.com/shadcn-ui`; `radix-ui` from `radix-ui/primitives`; `tw-animate-css` from `Wombosvideo/tw-animate-css` | Provenance check |
+| 2026-11-25 | Node script calling `cn()` on 8 cases (scratchpad) | 8/8 PASS, incl. `text-sm` + `text-success-foreground` kept, `bg-primary` + `bg-success-subtle` → last wins | Custom tokens merge correctly |
+| 2026-11-25 | `shadcn add badge` in scratchpad; `shadcn add button` in repo | `index.css` and `package.json` unchanged by `add` (diff) | P1-T04 |
+| 2026-11-25 | `pnpm typecheck`, `pnpm lint`, `pnpm build` (after P1-T04) | typecheck 0; lint 0 after scoping `only-export-components` off for `src/components/ui/**` (probe still reports 3 rules); build 0, CSS 23.53 kB / JS 258.38 kB (83.86 kB gzip); contrast script 21/21 PASS | P1-T04 |
+| 2026-11-25 | `vite --port 5179` + `curl` `/`, `/src/App.tsx`, `/src/components/ui/button.tsx`, `/src/index.css` | All 200; App imports button and lucide-react; no errors in log; server stopped | P1-T04 |
+| 2026-11-25 | `pnpm view <pkg> dist-tags.latest peerDependencies` for P1-T05 libraries | All latest stable; peers satisfied by React 19.3 / Zod 4; recharts needs `react-is` | P1-T05 |
+| 2026-11-25 | `pnpm add` P1-T05 libraries | Installed without release-age exclusions; `pnpm ls` shows no peer warnings; pnpm reported `@tanstack/react-table` agent skills awaiting approval (not approved) | P1-T05 |
+| 2026-11-25 | `pnpm typecheck` with temporary probe importing all 9 libraries (deleted afterwards) | First run: TS2558 on `createColumnHelper` (v9 needs `<TFeatures, TData>`); after fix: exit 0 | TS 7 compatibility confirmed |
+| 2026-11-25 | `TZ=<zone> node` probe: `@date-fns/tz` and `Intl` vs expected Karachi wall-clock for 6 instants (09:15:00/09:15:01 boundary, midnight, summer, offset input) | 6/6 pass under UTC, America/Los_Angeles, Asia/Karachi, Pacific/Kiritimati | D-038 |
+| 2026-11-25 | `pnpm typecheck`, `pnpm lint`, `pnpm build` (after P1-T05) | All exit 0; bundle unchanged (258.38 kB JS) as new libraries are not yet imported | P1-T05 |
+| 2026-11-25 | `pnpm add -D` vitest, coverage-v8, jsdom, Testing Library packages | Installed; vitest and coverage-v8 both 5.1.1; no peer warnings; no new permission requests (`pnpm permissions list`: only `@tanstack/react-table` skills pending) | P1-T06 |
+| 2026-11-25 | `pnpm test` (first runs) | 26 failures: CSS `?raw` import is `''` in Vitest; then `import.meta.url` not `file:` under jsdom. Fixed by `node:fs` + `@vitest-environment node` | P1-T06 |
+| 2026-11-25 | `pnpm test` / `pnpm test:tz` | 5 files, 36 tests pass in both (TZ=America/Los_Angeles) | P1-T06 |
+| 2026-11-25 | Mutation check: `--info` set back to `oklch(0.55 …)` | Token test failed exactly `--info-foreground on --info`; file restored (hash `bf31e5ac…` unchanged) | Test proves it catches regressions |
+| 2026-11-25 | `pnpm typecheck`, `pnpm lint`, `pnpm test:coverage`, `pnpm build` (after P1-T06) | All exit 0; coverage 100% of 1 measurable statement (App/utils only); CSS grew to 23.96 kB from test-only classes → `@source not` added → back to 23.53 kB, same hash as before P1-T06; no test code in JS bundle | P1-T06 |
+| 2026-11-25 | `pnpm add -D prettier@^3.10.0` | 3.10.1; no exclusions; no new permission requests | P1-T07 |
+| 2026-11-25 | `prettier --list-different .` then per-file diff preview | 4 files (`App.tsx`, `index.css`, `utils.test.ts`, `tsconfig.json`), line wrapping only; applied with `pnpm format` | P1-T07 |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:tz`, `build` | All exit 0; 36/36 tests in both runs; build output hashes unchanged (`index-DNW-yCox.css`, `index-8f33dHgQ.js`); `src/components/ui/button.tsx` untouched | P1-T07 |
+| 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
 ## G. SESSION HISTORY
@@ -643,3 +692,9 @@ Record real command outputs only. Never invent results.
 |---|---|---|---|---|
 | 2026-11-25 | Planning documents generated | None | None | P0-T06 then P1-T01 |
 | 2026-11-25 | Documentation integrated into `CLAUDE.md` + `docs/`; audit performed | P0-T05, P0-T06 | Supplied `CLAUDE.md` was a duplicate (resolved by rewrite, Q-PROJ-01); concurrent user commits during session | User review; P0-T07; then P1-T01 after approval |
+| 2026-11-25 | User answered Q-TECH-05 (TS 7 + oxlint), Q-GIT-01 (branch per phase), P0-T07; branch `phase-1-foundation` created; P1-T01 done; P1-T02 scaffold done and verified | P0-T07, P1-T01, P1-T02 (except `format`/`test` scripts) | pnpm release-age bypass auto-added and reverted | P1-T03 |
+| 2026-11-25 | P1-T03: Tailwind v4 + design tokens with verified contrast | P1-T03 | None | P1-T04 |
+| 2026-11-25 | P1-T04: shadcn/ui (Radix, nova) set up manually after dry run showed `init` overwrites tokens; Button + Lucide verified | P1-T04 | None | P1-T05 |
+| 2026-11-25 | P1-T05: core libraries installed and verified (TS 7 types, Karachi conversion) | P1-T05 | Agent-skills approval pending user (R-020) | P1-T06 |
+| 2026-11-25 | P1-T06: Vitest + Testing Library + jsdom; 36 tests incl. token contrast guard and TZ run | P1-T06 | None | P1-T07 |
+| 2026-11-25 | P1-T07: Prettier configured; toolchain complete (P1-T02 closed) | P1-T07, P1-T02 | None | P1-T08 |
