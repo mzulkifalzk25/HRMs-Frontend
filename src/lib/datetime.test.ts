@@ -11,8 +11,10 @@ import {
   formatAppDate,
   formatAppDateTime,
   formatAppTime,
+  formatDateKey,
   InvalidInstantError,
   msSinceAppMidnight,
+  shiftDateKey,
   toAppIsoString,
   toDate,
 } from './datetime'
@@ -147,5 +149,30 @@ describe('display formatting (provisional formats, Q-TECH-04)', () => {
 
   it('never rounds: 9:14:59 is not shown as 9:15', () => {
     expect(formatAppTime('2026-11-25T04:14:59Z')).toBe('9:14 AM')
+  })
+})
+
+describe('shiftDateKey', () => {
+  it.each([
+    ['2026-11-25', 1, '2026-11-26'],
+    ['2026-11-25', -25, '2026-10-31'],
+    ['2026-02-28', 1, '2026-03-01'],
+    ['2028-02-28', 1, '2028-02-29'],
+    ['2026-12-31', 1, '2027-01-01'],
+    ['2026-11-25', 0, '2026-11-25'],
+  ])('%s %+d days → %s', (from, days, to) => {
+    expect(shiftDateKey(from, days)).toBe(to)
+  })
+
+  it('rejects invalid dates and fractional days', () => {
+    expect(() => shiftDateKey('2026-02-30', 1)).toThrow(InvalidInstantError)
+    expect(() => shiftDateKey('2026-11-25', 1.5)).toThrow(InvalidInstantError)
+  })
+})
+
+describe('formatDateKey', () => {
+  it('formats calendar dates without shifting the day in any timezone', () => {
+    expect(formatDateKey('2026-11-25')).toBe('25 Nov 2026')
+    expect(formatDateKey('2027-01-01')).toBe('1 Jan 2027')
   })
 })

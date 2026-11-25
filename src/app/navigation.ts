@@ -1,44 +1,59 @@
-// Sidebar navigation (P1-T14). Static and role-agnostic for now; role-aware filtering is P2-T11.
-// Modules that do not exist yet are listed as "planned" (not links), so nothing leads to a dead page.
-import {
-  Bell,
-  CalendarDays,
-  ChartColumn,
-  ClipboardCheck,
-  Clock,
-  FileUp,
-  LayoutDashboard,
-  Network,
-  ScrollText,
-  Settings,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+// Sidebar navigation (P2-T11). Role-aware and limited to modules that exist: items for modules
+// that are not built yet are hidden, never dead links. Add items here as later phases ship them.
+// Visibility is UX only; the backend decides what each role may access (D-027).
+import { LayoutDashboard, UserRound, type LucideIcon } from 'lucide-react'
+import { dashboardPathForRole, ROLES, type Role } from '@/features/authentication'
 
-export type NavItem =
-  | { label: string; icon: LucideIcon; status: 'available'; to: string }
-  | { label: string; icon: LucideIcon; status: 'planned'; phase: number }
+export type NavItem = {
+  label: string
+  icon: LucideIcon
+  /** Static path, or a function of the role (e.g. each role's dashboard). */
+  to: string | ((role: Role) => string)
+  roles: readonly Role[]
+  /** Match the path exactly (no child routes). */
+  end?: boolean
+}
 
 export type NavSection = { title: string; items: NavItem[] }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Workspace',
-    items: [{ label: 'Overview', icon: LayoutDashboard, status: 'available', to: '/' }],
-  },
-  {
-    title: 'Planned modules',
     items: [
-      { label: 'Employees', icon: Users, status: 'planned', phase: 3 },
-      { label: 'Organization', icon: Network, status: 'planned', phase: 3 },
-      { label: 'Attendance', icon: Clock, status: 'planned', phase: 4 },
-      { label: 'Leave', icon: CalendarDays, status: 'planned', phase: 5 },
-      { label: 'Approvals', icon: ClipboardCheck, status: 'planned', phase: 5 },
-      { label: 'Notifications', icon: Bell, status: 'planned', phase: 6 },
-      { label: 'Imports', icon: FileUp, status: 'planned', phase: 7 },
-      { label: 'Reports', icon: ChartColumn, status: 'planned', phase: 8 },
-      { label: 'Audit log', icon: ScrollText, status: 'planned', phase: 8 },
-      { label: 'Settings', icon: Settings, status: 'planned', phase: 8 },
+      {
+        label: 'Dashboard',
+        icon: LayoutDashboard,
+        to: dashboardPathForRole,
+        roles: ROLES,
+        end: true,
+      },
     ],
   },
+  {
+    title: 'Account',
+    items: [{ label: 'My profile', icon: UserRound, to: '/profile', roles: ROLES, end: true }],
+  },
 ]
+
+export type ResolvedNavItem = { label: string; icon: LucideIcon; to: string; end: boolean }
+export type ResolvedNavSection = { title: string; items: ResolvedNavItem[] }
+
+/** Sections and items visible to a role; empty sections are dropped. */
+export function navigationForRole(
+  role: Role,
+  sections: NavSection[] = NAV_SECTIONS,
+): ResolvedNavSection[] {
+  return sections
+    .map((section) => ({
+      title: section.title,
+      items: section.items
+        .filter((item) => item.roles.includes(role))
+        .map((item) => ({
+          label: item.label,
+          icon: item.icon,
+          to: typeof item.to === 'function' ? item.to(role) : item.to,
+          end: item.end ?? false,
+        })),
+    }))
+    .filter((section) => section.items.length > 0)
+}
