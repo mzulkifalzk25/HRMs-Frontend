@@ -3,7 +3,7 @@
 import { SectionCard } from '@/components/shared/section-card'
 import type { DashboardService } from '../api/dashboard.service'
 import { useTeamLeadDashboard } from '../api/use-dashboards'
-import { AttendanceSummary } from '../components/attendance-summary'
+import { LiveTeamAttendance } from '../components/live-team-attendance'
 import { DashboardHeader } from '../components/dashboard-header'
 import { ApprovalTaskList, TeamMemberList } from '../components/dashboard-lists'
 import { DashboardQueryView } from '../components/dashboard-query-view'
@@ -17,7 +17,7 @@ export function TeamLeadDashboardPage({ service }: { service?: DashboardService 
         {(data) => (
           <div className="space-y-6">
             <SectionCard title="Team attendance" description="Today">
-              <AttendanceSummary summary={data.teamAttendance} />
+              <LiveTeamAttendance />
             </SectionCard>
             <div className="grid gap-6 lg:grid-cols-2">
               <SectionCard title="Leave reviews" description="Add a comment or recommendation">

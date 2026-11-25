@@ -4,7 +4,7 @@ import { SectionCard } from '@/components/shared/section-card'
 import { StatCard } from '@/components/shared/stat-card'
 import type { DashboardService } from '../api/dashboard.service'
 import { useSeniorPmDashboard } from '../api/use-dashboards'
-import { AttendanceSummary } from '../components/attendance-summary'
+import { LiveTeamAttendance } from '../components/live-team-attendance'
 import { DashboardHeader } from '../components/dashboard-header'
 import { ApprovalTaskList } from '../components/dashboard-lists'
 import { DashboardQueryView } from '../components/dashboard-query-view'
@@ -50,7 +50,7 @@ export function SeniorPmDashboardPage({ service }: { service?: DashboardService 
               </SectionCard>
             </div>
             <SectionCard title="Team attendance" description="Today, across your project teams">
-              <AttendanceSummary summary={data.teamAttendance} />
+              <LiveTeamAttendance />
             </SectionCard>
           </div>
         )}

@@ -3,6 +3,7 @@ import { CalendarClock, Clock, UserCheck, UserX, Users } from 'lucide-react'
 import { SectionCard } from '@/components/shared/section-card'
 import { StatCard } from '@/components/shared/stat-card'
 import type { DashboardService } from '../api/dashboard.service'
+import { useAttendanceSummary } from '@/features/attendance'
 import { useHrDashboard } from '../api/use-dashboards'
 import { AttendanceTrendChart } from '../components/attendance-trend-chart'
 import { DashboardHeader } from '../components/dashboard-header'
@@ -12,6 +13,9 @@ import { DepartmentOverview } from '../components/dashboard-widgets'
 
 export function HrDashboardPage({ service }: { service?: DashboardService }) {
   const query = useHrDashboard(service)
+  // Today's counts come from the attendance service (P4-T13); the rest from the dashboard service.
+  const attendance = useAttendanceSummary()
+  const live = attendance.data
   return (
     <div className="space-y-6">
       <DashboardHeader description="Organization-wide attendance and leave at a glance." />
@@ -22,20 +26,20 @@ export function HrDashboardPage({ service }: { service?: DashboardService }) {
               <StatCard label="Total employees" value={data.metrics.totalEmployees} icon={Users} />
               <StatCard
                 label="Present today"
-                value={data.metrics.presentToday}
+                value={live?.present ?? data.metrics.presentToday}
                 icon={UserCheck}
                 tone="success"
               />
               <StatCard
                 label="Absent today"
-                value={data.metrics.absentToday}
+                value={live?.absent ?? data.metrics.absentToday}
                 icon={UserX}
                 tone="danger"
                 hint="Provisional definition"
               />
               <StatCard
                 label="Late arrivals"
-                value={data.metrics.lateArrivals}
+                value={live?.late ?? data.metrics.lateArrivals}
                 icon={Clock}
                 tone="warning"
                 hint="Tracking only"

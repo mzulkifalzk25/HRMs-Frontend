@@ -7,11 +7,8 @@ import { useEmployeeDashboard } from '../api/use-dashboards'
 import { DashboardHeader } from '../components/dashboard-header'
 import { ActivityList, LeaveRequestList } from '../components/dashboard-lists'
 import { DashboardQueryView } from '../components/dashboard-query-view'
-import {
-  LeaveBalances,
-  NotificationPreviewList,
-  TodayAttendance,
-} from '../components/dashboard-widgets'
+import { CheckInCard } from '@/features/attendance'
+import { LeaveBalances, NotificationPreviewList } from '../components/dashboard-widgets'
 
 export function EmployeeDashboardPage({ service }: { service?: DashboardService }) {
   const query = useEmployeeDashboard(service)
@@ -23,7 +20,7 @@ export function EmployeeDashboardPage({ service }: { service?: DashboardService 
           <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">
               <SectionCard title="Today" description="Your attendance">
-                <TodayAttendance today={data.today} />
+                <CheckInCard />
               </SectionCard>
               <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2 lg:grid-cols-3">
                 <StatCard

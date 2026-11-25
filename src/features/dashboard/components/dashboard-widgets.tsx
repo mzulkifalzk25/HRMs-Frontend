@@ -1,13 +1,10 @@
-import { Bell, Clock, FolderKanban } from 'lucide-react'
+import { Bell, FolderKanban } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/empty-state'
 import { StatusBadge } from '@/components/shared/status-badge'
-import { Button } from '@/components/ui/button'
-import { formatAppDateTime, formatAppTime, formatDateKey } from '@/lib/datetime'
-import { LEAVE_TYPE_LABELS, TODAY_STATUS_LABELS } from '@/types/hr'
-import { TODAY_STATUS_TONE } from '../lib/status-tones'
+import { formatAppDateTime } from '@/lib/datetime'
+import { LEAVE_TYPE_LABELS } from '@/types/hr'
 import type {
   DepartmentStat,
-  EmployeeDashboard,
   LeaveBalance,
   NotificationPreview,
   ProjectTeam,
@@ -82,44 +79,6 @@ export function LeaveBalances({ balances }: { balances: LeaveBalance[] }) {
         </li>
       ))}
     </ul>
-  )
-}
-
-/** Today's attendance with the check-in/out control shell (behaviour arrives in Phase 4, P2-T18). */
-export function TodayAttendance({ today }: { today: EmployeeDashboard['today'] }) {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">{formatDateKey(today.date)}</span>
-        <StatusBadge tone={TODAY_STATUS_TONE[today.status]}>
-          {TODAY_STATUS_LABELS[today.status]}
-        </StatusBadge>
-      </div>
-      <dl className="grid grid-cols-2 gap-3">
-        <div className="rounded-md bg-muted/60 px-3 py-2.5">
-          <dt className="text-xs text-muted-foreground">Check-in</dt>
-          <dd className="text-lg font-semibold tabular-nums">
-            {today.checkInAt ? formatAppTime(today.checkInAt) : '—'}
-          </dd>
-        </div>
-        <div className="rounded-md bg-muted/60 px-3 py-2.5">
-          <dt className="text-xs text-muted-foreground">Check-out</dt>
-          <dd className="text-lg font-semibold tabular-nums">
-            {today.checkOutAt ? formatAppTime(today.checkOutAt) : '—'}
-          </dd>
-        </div>
-      </dl>
-      <div className="space-y-1.5">
-        <Button disabled className="w-full" aria-describedby="check-in-availability">
-          <Clock aria-hidden="true" />
-          {today.checkInAt && !today.checkOutAt ? 'Check out' : 'Check in'}
-        </Button>
-        <p id="check-in-availability" className="text-xs text-muted-foreground">
-          Checking in and out from FormbaxHR arrives with the attendance module (Phase 4). Times are
-          Pakistan time.
-        </p>
-      </div>
-    </div>
   )
 }
 
