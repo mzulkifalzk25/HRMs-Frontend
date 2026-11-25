@@ -1,216 +1,96 @@
-# FormbaxHR — Decisions Register
+# FormbaxHR — Instructions for Claude Code
 
-> Claude Code: read this before implementing. Never answer an open question yourself.
-> Sections: (1) Confirmed decisions, (2) Recommendations (not yet approved), (3) Open questions, (4) Decision change log.
-> "Recorded" date is when the decision was written into this file. Original discussion dates were not captured; only the recording date is known (2026-11-25).
-> When the user answers an open question: move it to Confirmed with the date and reason, update affected plan tasks, and remove the `BLOCKED` annotation.
+FormbaxHR is an enterprise HRMS frontend (React + TypeScript + Vite), inspired by Zoho People in function, with its own branding and design. A separate Django 5.2 + DRF + PostgreSQL backend will be built later. Until then, the frontend runs against mock services.
 
----
+Do not rely on conversation history. These three files are the source of truth:
 
-## 1. CONFIRMED DECISIONS
-
-### 1.1 Project and workflow
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-001 | Product is **FormbaxHR**, an enterprise HRMS inspired by Zoho People, with own branding, interface, architecture and implementation. | Business objective. | 2026-11-25 |
-| D-002 | The system must be modular, scalable, secure, maintainable and suitable for real organizational use. It is not a simple dashboard or UI-only demo. | Business objective. | 2026-11-25 |
-| D-003 | Development happens **directly in the existing `HRMs-Frontend` repository using Claude Code** (selected "Option 1"). | User does not want a second repository. | 2026-11-25 |
-| D-004 | Do **not** create another GitHub repository (a separate FormbaxHR repository was explicitly rejected). Do not recommend replacing the existing repository. | User preference. | 2026-11-25 |
-| D-005 | Lovable project creation and Lovable GitHub synchronization are **not** part of the workflow. Lovable MCP may be used only for supported design assistance where useful. | Lovable's GitHub sync creates a new repository and cannot attach to the existing one. | 2026-11-25 |
-| D-006 | Tools: VS Code, Claude Code inside VS Code, GitHub for source control/hosting, Lovable MCP optionally for design assistance. | Workflow. | 2026-11-25 |
-| D-007 | Repository facts: `https://github.com/mzulkifalzk25/HRMs-Frontend`; branch `main`; remote `origin`; commits `4c7560c` (first commit) and `3ffa6c8` (chore: add frontend gitignore). Git must not be reinitialized and history must not be overwritten. | Preserve history. | 2026-11-25 |
-| D-008 | Initial repository contents were `.gitignore`, `README.md`, and `.vscode/mcp.json` (ignored). `.gitignore` already covers Node dependencies, build output, env variables, caches, logs and VS Code configuration. | Scaffolding must preserve these. | 2026-11-25 |
-| D-009 | Persistent file-driven workflow: `CLAUDE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISIONS.md` are the source of truth; Claude Code must not rely on conversation history. | Allows resuming after closing VS Code or days later. | 2026-11-25 |
-| D-010 | Package manager is **pnpm**. | User preference. | 2026-11-25 |
-| D-011 | Reported environment: Node.js 26.13.0, npm 11.20.0, pnpm 12.16.1, Yarn 1.22.22 (as reported by the user's earlier inspection; re-verify when scaffolding). | Informational. | 2026-11-25 |
-| D-012 | Do not commit or push unless explicitly asked. Never force push; never reset or rewrite history. | Data integrity and safety priority. | 2026-11-25 |
-| D-013 | Development is incremental across nine phases (0–9 as defined in the plan). The whole system must not be implemented in one operation. | Manageability. | 2026-11-25 |
-| D-014 | Phase 0 analysis found: repo nearly empty, no `package.json`, no `src`, no Vite config, no dependencies installed, history intact, clean `main`, pnpm available. | Baseline for Phase 1. | 2026-11-25 |
-
-### 1.2 Technology and architecture
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-020 | Frontend stack: React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Lucide React, React Router, TanStack Query, TanStack Table, React Hook Form, Zod, Recharts. | User-confirmed stack. | 2026-11-25 |
-| D-021 | Backend (separate repository, future): Python, Django 5.2, Django REST Framework, PostgreSQL, JWT authentication. | User-confirmed stack. | 2026-11-25 |
-| D-022 | Infrastructure such as Redis, Celery, object storage and email may be needed depending on requirements, but must not be introduced without a clear requirement. | Avoid unnecessary complexity. | 2026-11-25 |
-| D-023 | Architecture philosophy: feature-based architecture, separation of concerns, clean code, reusable components, strong TypeScript typing, centralized API communication, explicit interfaces, testable business logic, minimal dependencies, clear documentation. Avoid unnecessary abstractions and over-engineering. | User preference. | 2026-11-25 |
-| D-024 | Proposed `src` structure (adaptable only with clear technical reason): `app/{router,providers,layouts,guards}`, `components/{ui,shared,tables,forms,charts,feedback}`, `features/{authentication,dashboard,employees,attendance,leaves,approvals,organization,imports,reports,notifications,audit,settings}`, `services/{api,auth,mock}`, `hooks`, `lib`, `types`, `constants`, `styles`. Each feature internally separates `api/`, `components/`, `pages/`, `schemas/`, `lib/`, `types.ts`. | User-provided structure. | 2026-11-25 |
-| D-025 | Frontend uses mock services initially. Env vars: `VITE_API_BASE_URL=http://localhost:8000/api/v1`, `VITE_USE_MOCK_API=true`. | Backend does not exist yet. | 2026-11-25 |
-| D-026 | Mock services are separate from real API services; each domain has typed service interfaces; mock and HTTP implementations follow the same contracts; UI never depends directly on mock data; switching mock to real must not require rewriting screens; mock data is clearly identified in the UI; mock operations are never presented as real backend operations. | Integration readiness and honesty. | 2026-11-25 |
-| D-027 | Django backend owns authoritative business logic and authorization. Frontend role guards are UX only. | Security. | 2026-11-25 |
-| D-028 | Attendance calculations must eventually be performed authoritatively by Django using `Asia/Karachi`, not the browser timezone. | Correctness across client timezones. | 2026-11-25 |
-| D-029 | Real Excel import processing must ultimately be done by Django. | Security and integrity. | 2026-11-25 |
-| D-030 | The frontend repository must eventually include `docs/BACKEND_SPECIFICATION.md` and `docs/API_INTEGRATION.md` with the contents described in the plan (Phase 9, with incremental notes per phase). Suggested Django apps: accounts, employees, organization, attendance, leaves, approvals, notifications, imports, reports, audit. | Backend handoff. | 2026-11-25 |
-| D-031 | Frontend and backend must follow consistent API contracts. | Integration. | 2026-11-25 |
-
-### 1.3 Roles, accounts and permissions
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-040 | Supported roles: HR Administrator, Manager, Senior Project Manager, Associate Project Manager, Team Lead, Employee. | Business requirement. | 2026-11-25 |
-| D-041 | Django superuser / technical administrator is separate from HR Administrator. | Separation of duties. | 2026-11-25 |
-| D-042 | No public signup. Technical administrator creates HR administrator accounts through Django Admin. HR creates and manages employee accounts. | Controlled access. | 2026-11-25 |
-| D-043 | Secure invitations and password setup are required. Password reset must be supported. | Security requirement. | 2026-11-25 |
-| D-044 | Employees see only their own private records. Managers see only their authorized reporting scope. HR has organization-wide HR access. | Privacy. | 2026-11-25 |
-
-### 1.4 Attendance policy
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-050 | Timezone is `Asia/Karachi` (Pakistan Standard Time, UTC+05:00). | Organization location. | 2026-11-25 |
-| D-051 | Official check-in is 9:00 AM with a 15-minute grace period. Before 9:00 AM is early/on-time; 9:00 AM through 9:15 AM is on time; after 9:15 AM is Late-In. Exactly 9:15:00 is NOT late; 9:15:01 is late. | Business policy. | 2026-11-25 |
-| D-052 | Employees may check in before 9:00 AM. The actual timestamp is preserved. | Business policy. | 2026-11-25 |
-| D-053 | Late-In is tracking only and must never affect payroll or salary. No payroll calculations are to be implemented. | Business policy. | 2026-11-25 |
-| D-054 | Official checkout is 6:00 PM. Employees may check out from 5:45 PM onward without an early-departure penalty. | Business policy. | 2026-11-25 |
-| D-055 | Actual checkout timestamp is recorded. | Auditability. | 2026-11-25 |
-| D-056 | Working duration = actual checkout timestamp − actual check-in timestamp. No rounding to official times. No lunch or break deductions. | Business policy. | 2026-11-25 |
-| D-057 | Incomplete attendance sessions must be clearly identified. | Data integrity. | 2026-11-25 |
-| D-058 | HR attendance corrections require a mandatory reason and produce correction audit history. | Auditability. | 2026-11-25 |
-
-### 1.5 Leave and approval policy
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-060 | Annual allowance: Medical/Sick 7, Casual 7, Annual 7 (total 21 days). Separate balances per category. | Business policy. | 2026-11-25 |
-| D-061 | Approved leave deducts from the selected category only. Pending, declined and cancelled leave do not deduct. | Business policy. | 2026-11-25 |
-| D-062 | An auditable leave transaction ledger is maintained. HR can configure allocations. Employees can see allocated, used and remaining balances. | Auditability. | 2026-11-25 |
-| D-063 | Leave application fields: leave type, start date, end date, requested duration, reason, optional attachment, selected manager(s) where applicable. | Business requirement. | 2026-11-25 |
-| D-064 | HR automatically receives leave lifecycle notifications and cannot be removed from recipients. Notification recipients, reviewers, approvers and final decision-makers are distinct concepts. | Business policy. | 2026-11-25 |
-| D-065 | Manager remains the final approval authority for their team. Authorized Associate PM can participate but cannot override the Project Manager's final authority. Team Lead can review, comment and recommend. | Business policy. (See Q-APPR-04 for terminology clarification.) | 2026-11-25 |
-| D-066 | Senior PM approves Associate PM's own leave. Managers submit their own leave directly to HR. Employees without a manager submit directly to HR. Associate PM submits their own leave to Senior PM. HR monitors all leave requests and balances. | Business policy. | 2026-11-25 |
-| D-067 | Support configurable sequential and parallel review. It must not be assumed that multiple selected managers must all approve. | Flexibility. | 2026-11-25 |
-| D-068 | Prevent self-approval. Rejection requires a reason. | Integrity. | 2026-11-25 |
-| D-069 | The future Django backend must prevent duplicate deductions and concurrent-approval race conditions using transactions and row locking. | Data integrity. | 2026-11-25 |
-
-### 1.6 Modules, UI and safety
-
-| ID | Decision | Reason | Recorded |
-|---|---|---|---|
-| D-070 | Required modules: Authentication; six role dashboards; Employee management; Organization; Attendance; Leave and approvals; Excel imports (`.xlsx` and `.xls`); Notifications; Reports; Settings; Audit (contents as listed in the plan). | Business requirement. | 2026-11-25 |
-| D-071 | Excel import features: upload, preview, column mapping, validation, duplicate detection, dry run, row-level errors, execution, history, error report download. Never silently overwrite existing data. Imports cover employee records, historical attendance, historical leave records and leave balances. | Data integrity. | 2026-11-25 |
-| D-072 | UI direction: premium enterprise SaaS; modern, professional, clean, light theme, neutral backgrounds, blue/indigo primary, semantic green/red/amber/blue/gray, clear typography, whitespace, subtle borders/shadows, responsive. App shell with sidebar, top navigation, global search, notification center, user menu, breadcrumbs, responsive mobile navigation. Include loading states, skeletons, empty states, error states, success feedback, form validation, confirmation dialogs, accessible controls, mobile-friendly tables. Not a generic dashboard template. | Product quality. | 2026-11-25 |
-| D-073 | Safety rules: work only in the existing repository; no new repository; no Git reinitialization; no history rewriting; no force push; no commit/push unless asked; no file deletion without justification and permission; no exposed secrets; no real personal data in mock data; no deploy/publish; no unnecessary cloud services; env secrets out of Git; preserve existing configuration; use pnpm; do not claim tests pass without running them; do not mark tasks complete without satisfying acceptance criteria; do not invent unresolved business policies. | Safety priority. | 2026-11-25 |
-| D-074 | Answering style for advisory conversations: engineering-level explanations; distinguish confirmed decisions from recommendations; prefer incremental changes; include tests and acceptance criteria. | User preference. | 2026-11-25 |
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` (this file) | How to work in this repository |
+| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Phases, tasks, acceptance criteria, progress, logs |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Confirmed decisions (D-), recommendations (R-), open questions (Q-) |
 
 ---
 
-## 2. RECOMMENDATIONS (NOT YET APPROVED)
+## 1. Non-negotiable rules
 
-These are proposals from the Phase 0 analysis and planning. Claude Code must **ask the user** before treating any as approved, then move approved items to section 1.
+1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session.** Never change global Git config or credentials.
+2. **Data safety.** Inspect a file before changing it. Do not delete or overwrite files, configuration or documentation without explaining why and getting permission. Preserve `.gitignore`, `README.md` and `.vscode/` (local, ignored).
+3. **Secrets.** Never read, create, modify or print `.env` files containing secrets. Only `.env.example` with placeholder values is committed. No tokens, passwords or real personal data in code, mocks, logs or docs.
+4. **No invented business rules.** If a rule is not a confirmed decision in `docs/DECISIONS.md`, do not implement it as a guess. Isolate the behavior, mark the task `BLOCKED by Q-…`, and ask the user.
+5. **Honesty.** Never claim a feature talks to a real backend when it uses mocks. Never claim tests, lint, typecheck or build pass without running them in this session.
+6. **Security boundary.** Frontend guards and role-based UI are UX only. The backend is authoritative for authentication, authorization and business rules (D-027).
+7. **No deploy or publish**, and no new cloud services, Lovable projects or paid operations without explicit approval (D-005, D-073).
+8. **Package manager is pnpm** (D-010). Do not create npm or yarn lockfiles. Do not add dependencies that the plan doesn't call for, and record any new dependency in `docs/DECISIONS.md`.
 
-| ID | Recommendation | Rationale / trade-off | Status |
-|---|---|---|---|
-| R-001 | Typed centralized HTTP client with normalized errors and abort support. | Consistent error handling; aligns with D-023. | Recommended |
-| R-002 | Pure, unit-tested policy functions for attendance classification, balance computation, routing and hierarchy checks. | Testability; aligns with D-023. | Recommended |
-| R-003 | Vitest + React Testing Library + jsdom for unit/component tests. | Native fit with Vite; minimal dependencies. | Recommended |
-| R-004 | Playwright (or equivalent) for end-to-end tests in Phase 9. | Cross-browser flows; adds a dependency. | Recommended |
-| R-005 | Dates handled with explicit `Asia/Karachi` conversion through a small, well-tested helper layer; library (e.g., date-fns + timezone support, or Luxon, or native `Intl`) to be chosen at P1-T12. | Avoid browser-timezone bugs; library choice affects bundle size. | Recommended; library undecided |
-| R-006 | Path alias `@/` → `src/`. | Readability. | Recommended |
-| R-007 | ESLint (TypeScript, React hooks, jsx-a11y) and Prettier. | Consistency and accessibility. | Recommended |
-| R-008 | Prefer deactivation over deletion for employees and organizational entities. | Data integrity; consistent with audit needs. | Recommended |
-| R-009 | Notification freshness via TanStack Query polling/refetch rather than WebSockets until a real-time requirement exists. | Avoids new infrastructure (D-022). | Recommended |
-| R-010 | Tailwind and shadcn/ui versions chosen by checking current official setup instructions at scaffold time; record the choice. | Avoid stale setup. | Recommended |
-| R-011 | One commit per verified milestone, created only when the user asks. | Clear history and safe rollback. | Recommended |
-| R-012 | Neutralize spreadsheet formula injection on all CSV/XLSX exports. | Security. | Recommended |
-| R-013 | Idempotency keys on leave approval and import-execute requests (backend expectation documented in API docs). | Prevent duplicate effects. | Recommended |
-| R-014 | Record leave ledger entries as append-only; corrections are new compensating entries. | Auditability. | Recommended |
+## 2. Session start protocol
 
----
+At the start of every session, before writing code:
 
-## 3. OPEN QUESTIONS (UNRESOLVED — DO NOT ANSWER BY ASSUMPTION)
+1. Read `CLAUDE.md` (this file).
+2. Read `docs/IMPLEMENTATION_PLAN.md`, especially sections A (Current status) and B (Next session).
+3. Read `docs/DECISIONS.md`: confirmed decisions, recommendations and open questions.
+4. Run `git status`, `git branch -vv` and `git log --oneline -5`. Note any uncommitted or unexpected changes and do not discard them.
+5. Inspect the actual implementation (files, `package.json`, tests) before assuming anything the plan says. If the code and the plan disagree, the code is the fact. Report the difference and correct the plan.
+6. Identify completed and incomplete tasks. A ticked task without supporting code or verification is reported to the user, not trusted.
+7. Resume from the next incomplete, unblocked task listed in plan section A/B. If it is blocked, say so and propose the next unblocked task.
+8. State the task you are about to do and wait for approval if the plan or the user requires it.
 
-Format: ID, question, options (neutral, not a recommendation), what it blocks.
+## 3. Working conventions
 
-### 3.1 Leave policy
+- **Architecture.** Follow D-024. Inside `src/`: `app/` (router, providers, layouts, guards), `components/` (ui, shared, tables, forms, charts, feedback), `features/<feature>/` (with `api/`, `components/`, `pages/`, `schemas/`, `lib/`, `types.ts`), `services/` (api, auth, mock), `hooks/`, `lib/`, `types/`, `constants/`, `styles/`. Create folders only when they're needed. Any deviation needs a recorded technical reason.
+- **Service layer (D-026).** Each domain has a typed service interface with an HTTP and a mock implementation, selected by `VITE_USE_MOCK_API`. UI components never import mock data directly. They use TanStack Query hooks that call the service interface.
+- **Business logic** (attendance classification, durations, balances, routing, workflow, hierarchy checks) lives in pure, unit-tested functions in `features/*/lib`, not in components.
+- **Time.** All policy decisions use `Asia/Karachi` (D-050), never the browser timezone. Keep actual timestamps (ISO 8601 with offset). Never round to official times.
+- **No payroll or salary calculations** anywhere (D-053).
+- **TypeScript strict.** Avoid `any`. Validate forms, env and API boundaries with Zod.
+- **UI.** Follow D-072. Every data-driven view has loading (skeleton), empty, error and success states. Forms are accessible. Destructive actions need confirmation. Tables work on mobile. Mock mode is visibly indicated.
+- **Small changes.** Work one task or one milestone at a time (D-013). Don't build several phases in one change.
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-LEAVE-01 | Is the leave year the calendar year or the employee's anniversary year? | Calendar year; anniversary year; configurable | P5-T15, P8-T12 |
-| Q-LEAVE-02 | Is mid-year proration applied for new joiners? | No proration; proration method TBD | P5-T15, P8-T12 |
-| Q-LEAVE-03 | Is there carry-forward, encashment or expiration of unused leave? | Each separately yes/no with limits | P5-T15, P8-T12 |
-| Q-LEAVE-04 | Do weekends count toward requested duration? Which days are working days? | Count all days; count working days only; configurable | P5-T06, P8-T13 |
-| Q-LEAVE-05 | Do public holidays inside a leave range count toward duration? | Count; exclude; configurable | P5-T06, P8-T14 |
-| Q-LEAVE-06 | Is half-day leave supported? If yes, how (first/second half, hours)? | Not supported; supported with defined granularity | P5-T06 |
-| Q-LEAVE-07 | Are negative balances allowed? | Disallowed; allowed with limit; allowed for specific types | P5-T02, P5-T06 |
-| Q-LEAVE-08 | Can approved leave be cancelled? By whom, until when, and is the balance restored? | Not allowed; requester before start date; HR only; other | P5-T13 |
-| Q-LEAVE-09 | Rules for overlapping, backdated and past-dated leave requests? | Disallow; allow with HR approval; allow freely | P5-T06 |
-| Q-LEAVE-10 | Attachment rules: allowed file types, maximum size, required for which leave types (e.g., sick)? | Define per type | P5-T06 |
-| Q-LEAVE-11 | How is an Associate PM "authorized" to participate in team leave review (per team, per employee, by HR assignment)? | See Q-APPR-05 | P3, P5-T10 |
+## 4. Task completion and verification rules
 
-### 3.2 Approval workflow
+A task may be ticked `- [x]` only when **all** of these are true:
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-APPR-01 | Who approves leave for HR Administrators, Senior PMs and Team Leads (their own leave)? Not specified. | Define a route per role | P5-T07 |
-| Q-APPR-02 | Approval authority of Senior PM, Team Lead and HR over normal employee leave: who is approver vs reviewer vs observer? | Define per role | P5-T07, P5-T10 |
-| Q-APPR-03 | Parallel review completion rule when multiple managers are selected: all approve, any one, or threshold? What happens on conflicting decisions? | All; any; configurable per workflow | P5-T08, P8-T15 |
-| Q-APPR-04 | Is "Project Manager" in the authority rule the same as "Manager", or does it refer to Senior PM / Associate PM roles? | Clarify mapping | P5-T10 |
-| Q-APPR-05 | How is an Associate PM's authorization granted and scoped? | Per team; per employee; per project; HR assignment | P5-T10 |
-| Q-APPR-06 | Is a Team Lead recommendation mandatory before the Manager decides, or optional? | Mandatory; optional; configurable | P5-T08 |
-| Q-APPR-07 | Is there an escalation or timeout if no one decides? | None; auto-escalate to HR; other | P5-T08 |
-| Q-APPR-08 | Can HR override or decide on any request? Under what conditions? | No; yes with reason; yes only as fallback | P5-T10 |
+1. The implementation exists in the repository. Documentation or intent alone doesn't count.
+2. Its acceptance criteria in the plan are met.
+3. The required tests exist and were **run in this session** and pass.
+4. Where applicable, `pnpm typecheck`, `pnpm lint`, `pnpm test` and (at milestone end) `pnpm build` were run and passed. These scripts are created in Phase 1; until then, record what verification was actually possible.
+5. The real command and outcome are recorded in the plan's Verification Log (section F).
 
-### 3.3 Attendance
+If something partially works, leave the box unticked and add a note describing what remains. Never tick a box based on a previous session's claim without re-checking.
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-ATT-01 | What is the policy for check-outs before 5:45 PM (tracking, reasons, flagging)? | Track only; flag; require reason; other | P4-T02, P4-T08 |
-| Q-ATT-02 | What defines "absent"? | No check-in on a working day; incomplete sessions counted?; exemptions for leave/holidays | P2-T13, P4-T13, P8 reports |
-| Q-ATT-03 | Are multiple attendance sessions per day allowed? | Single session only; multiple sessions with aggregation | P4-T04 |
-| Q-ATT-04 | Correction rules: who can correct (HR only?), time limits, whether corrections need approval or employee acknowledgment, can HR correct without an employee request? | Define | P4-T10 |
-| Q-ATT-05 | How do holidays, weekends and approved leave interact with attendance records and absent status? | Define | P4-T06, P8 |
-| Q-ATT-06 | What happens when a user forgets to check out (auto-close, flag only, HR resolves)? | Flag only; HR resolves; auto-close rule | P4-T07 |
-| Q-ATT-07 | Remote/other-location check-in and any location/IP validation requirement? | None; recorded; enforced | P4-T04 |
+## 5. Keeping the documents current
 
-### 3.4 Authentication and technical
+After each meaningful milestone, and before the session ends:
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-TECH-01 | Token storage and refresh behavior: access token in memory + refresh in httpOnly cookie; both in cookies; localStorage; other? Rotation/blacklist? | Each has XSS/CSRF trade-offs; backend cooperation needed | P2-T03, P9-T09 |
-| Q-TECH-02 | Excel preview strategy: parse in browser, parse on server, or hybrid? Maximum file/row limits? | Client; server; hybrid | P7-T04 (Q-IMP-01) |
-| Q-AUTH-01 | Password policy (length, complexity, breach checks, history)? | Define | P2-T04–T06 |
-| Q-AUTH-02 | Invitation link expiry, resend rules, and single-use behavior? | Define | P2-T06 |
-| Q-AUTH-03 | Session timeout / idle timeout and "remember me" behavior? | Define | P2-T03 |
-| Q-AUTH-04 | MFA/SSO requirement now or later? | None now; later; required | P2 |
-| Q-TECH-03 | Is CSV export sufficient or are XLSX/PDF exports required for reports and attendance? | CSV; XLSX; PDF | P4-T12, P8-T09 |
-| Q-TECH-04 | Language and date format preferences (English only? date display format)? | Define | P1, all UI |
+- **Plan:** update section A (current status, current/next task, blockers), section B (next session start point), tick verified tasks, and append to E (Changed Files Log), F (Verification Log) and G (Session History). Task IDs are stable: never renumber or delete tasks. Add new ones with the next free number.
+- **Decisions:** record every new architectural or business decision (D-), recommendation (R-) and open question (Q-) in `docs/DECISIONS.md`. When the user answers a question, move it to Confirmed with the date, update affected tasks, remove their `BLOCKED` notes, and add a change-log entry. Never delete old change-log entries.
+- **Blockers:** document blockers and unresolved questions in both files (plan section A, and Q- entries), with the task IDs they block.
 
-### 3.5 Organization and employees
+## 6. Ending a session
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-ORG-01 | Employee ID format and required employee fields (CNIC and other identifiers allowed? personal data scope)? | Define; privacy implications | P3-T01, P3-T05 |
-| Q-ORG-02 | Is the system single-company or multi-company/multi-tenant? | Single; multi | Architecture |
-| Q-ORG-03 | Does deactivation require a reason? What happens to pending leave, reporting lines and approvals of a deactivated employee? | Define | P3-T07 |
-| Q-ORG-04 | Can one employee belong to multiple teams/departments/projects simultaneously? | Single; multiple | P3-T01, P3-T11 |
-| Q-ORG-05 | Can HR edit their own employee record / leave balance? | Define | P3, P5 |
+1. Update the documents as in §5.
+2. Run `git status` and list every file changed this session.
+3. Report what was completed and verified, what is unfinished, any blockers, and the exact next task.
+4. Do not commit or push unless the user asks. If asked, commit only the files related to the milestone, with a clear message.
 
-### 3.6 Notifications, imports, reports, settings, audit
+## 7. Commands
 
-| ID | Question | Options to consider | Blocks |
-|---|---|---|---|
-| Q-NOT-01 | Are email notifications in scope now (requires email infrastructure), or in-app only? | In-app only; in-app + email | P6, backend |
-| Q-NOT-02 | Attendance reminder schedule and rules (who, when, which conditions)? | Define | P6-T07 |
-| Q-NOT-03 | HR announcement targeting (all, department, team) and retention? | Define | P6-T08 |
-| Q-IMP-01 | Excel preview parsing location (see Q-TECH-02). | Client; server | P7-T04 |
-| Q-IMP-02 | Duplicate-handling policy: skip, flag, or allow explicit overwrite per import? Duplicate keys per import type? | Define | P7-T07 |
-| Q-IMP-03 | Import templates and required columns for each import type? Are historical attendance timestamps in Karachi local time? | Define | P7-T12 |
-| Q-IMP-04 | Import file size/row limits? | Define | P7-T03 |
-| Q-IMP-05 | How do imported historical leave records and balances affect the ledger and current balances (opening balance entries vs reconstruction)? | Define | P7-T12 |
-| Q-REP-01 | Report/export formats and required columns? | Define | P8-T09 |
-| Q-SET-01 | Are attendance policy values editable settings, or fixed? Do settings changes have effective dates/versioning? | Fixed; editable; versioned | P8-T11 |
-| Q-SET-02 | Holiday calendar scope (national, company, per location) and who maintains it? | Define | P8-T14 |
-| Q-AUD-01 | Audit retention, visibility (which roles can see which audit categories), and export permissions? | Define | P8-T17–T20 |
+Not available yet; they are created in Phase 1 (P1-T02). Expected scripts:
 
----
+```bash
+pnpm install      # install dependencies
+pnpm dev          # start the dev server (mock mode by default)
+pnpm typecheck    # tsc --noEmit (strict)
+pnpm lint         # ESLint
+pnpm format       # Prettier
+pnpm test         # Vitest
+pnpm build        # production build
+```
 
-## 4. DECISION CHANGE LOG
+Environment (`.env.example`, D-025):
 
-Append entries when decisions are confirmed, changed or superseded. Do not delete previous entries.
-
-| Date | ID | Change | Who decided | Reason |
-|---|---|---|---|---|
-| 2026-11-25 | D-001…D-074 | Initial recording of confirmed decisions | User (earlier discussions) | Establish source of truth |
-| 2026-11-25 | Q-* | Initial recording of open questions | User and Phase 0 analysis; additional questions identified during plan creation | Prevent assumption-based implementation |
+```bash
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_USE_MOCK_API=true
+```

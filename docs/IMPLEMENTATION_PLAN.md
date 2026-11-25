@@ -12,22 +12,23 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Pre-implementation. Repository contains no frontend code. |
-| Current phase | Phase 0 finishing, then Phase 1 |
-| Current task | P0-T06 — Verify the three tracking documents are in place |
-| Next task | P1-T01 — Verify environment and plan non-destructive scaffold |
+| Overall state | Pre-implementation. Repository contains documentation only; no frontend code, no `package.json`. |
+| Current phase | Phase 0 (documentation integrated; awaiting user review), then Phase 1 |
+| Current task | P0-T07: confirm account name with the user |
+| Next task | P1-T01: verify environment and plan a non-destructive scaffold (after user approval) |
 | Branch | `main` |
-| Last known commits | `4c7560c` first commit; `3ffa6c8` chore: add frontend gitignore |
-| Working tree | Expected clean before the three tracking docs were added (verify with `git status`) |
+| Last known commits | `4c7560c` first commit; `3ffa6c8` chore: add frontend gitignore; `d0fc183`, `96c69c7`, `b25a165` (user's local commits of the planning docs at the repo root, made 2026-11-25; not pushed, `main` ahead of `origin/main` by 3) |
+| Working tree | Uncommitted: `docs/IMPLEMENTATION_PLAN.md` and `docs/DECISIONS.md` moved from the repo root; `CLAUDE.md` rewritten (see section E). Verify with `git status`. |
 | Mock mode | Not yet implemented |
-| Backend | Does not exist yet (separate future repository) |
+| Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
 
 ### Blockers
 - None blocking Phase 1.
 - Several later tasks are blocked by open questions; see section D and `docs/DECISIONS.md` (Q-IDs).
 
 ### Unresolved issues
-- Account name discrepancy to verify with the user: repository owner recorded as `mzulkifalzk25`; the Lovable screenshot showed `mzulkifalkz25`. Not blocking.
+- Account name (P0-T07): the plan earlier noted `mzulkifalkz25` from a Lovable screenshot. Evidence checked on 2026-11-25 consistently shows **`mzulkifalzk25`**: Git remote URL, `gh auth status` login, and Lovable account email. Awaiting user confirmation; not blocking.
+- The `CLAUDE.md` originally supplied was a byte-identical copy of `DECISIONS.md` (same SHA-256), so the intended instructions file was missing. `CLAUDE.md` was rewritten from the documented requirements. If the user has the original intended version, compare and merge (Q-PROJ-01).
 
 ---
 
@@ -36,9 +37,9 @@
 Update this section at the end of every session.
 
 - Start by following the session start protocol in `CLAUDE.md` §2.
-- Confirm the three tracking documents exist and are consistent (P0-T06).
-- Run `git status`; confirm only the expected docs files are new/modified.
-- Begin **Phase 1**: P1-T01 (environment verification and scaffold planning). Present the proposed scaffold approach to the user before running any scaffolding command, because the repository is non-empty and `.gitignore` / `README.md` must be preserved.
+- Check whether the user has reviewed the documentation integration of 2026-11-25 and whether the doc move/rewrite was committed (`git status`, `git log`).
+- Record the user's answers to P0-T07, Q-PROJ-01, Q-PROJ-02 and Q-GIT-01 if given.
+- Only after explicit user approval, begin **Phase 1**: P1-T01 (environment verification and scaffold planning). Present the proposed scaffold approach to the user before running any scaffolding command, because the repository is non-empty and `.gitignore` / `README.md` / `CLAUDE.md` / `docs/` must be preserved.
 - Do not commit or push unless asked.
 
 ---
@@ -134,17 +135,21 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 0 — Repository analysis and architecture
 
-**Goal:** Understand the repository and fix the architecture and workflow.
+**Objectives:** Understand the repository and fix the architecture and workflow.
 **Dependencies:** None.
+**Status:** In progress. P0-T01…T06 done and verified; P0-T07 awaits user confirmation.
 
 ### Tasks
-- [x] **P0-T01** Inspect repository state (reported complete by user: nearly empty; clean; on `main`; no `package.json`, `src/`, Vite config or installed dependencies; Git history intact).
-- [x] **P0-T02** Verify tooling availability (reported: Node 26.13.0, npm 11.20.0, pnpm 12.16.1, Yarn 1.22.22; pnpm preferred).
+- [x] **P0-T01** Inspect repository state (verified by command in Claude Code on 2026-11-25: nearly empty; clean; on `main`; no `package.json`, `src/`, Vite config or installed dependencies; Git history intact).
+- [x] **P0-T02** Verify tooling availability (verified 2026-11-25: `node -v` v26.13.0, `npm -v` 11.20.0, `pnpm -v` 12.16.1, `yarn -v` 1.22.22; pnpm chosen, D-010).
 - [x] **P0-T03** Produce recommendations (stack, feature-based architecture, mock/real service split, typed HTTP client, Asia/Karachi handling, pure policy functions, backend-authoritative rules).
 - [x] **P0-T04** Identify unresolved business and technical decisions (listed in `docs/DECISIONS.md`).
-- [ ] **P0-T05** Create `CLAUDE.md` (root) and `docs/DECISIONS.md`; expand this plan to nine phases.
-- [ ] **P0-T06** Verify the three tracking documents are in place, consistent with each other, and that `git status` shows only the expected files.
-- [ ] **P0-T07** Confirm with the user the account-name discrepancy (`mzulkifalzk25` vs `mzulkifalkz25`) and record the answer.
+- [x] **P0-T05** Create `CLAUDE.md` (root) and `docs/DECISIONS.md`; expand this plan to nine phases. (Done 2026-11-25. The supplied `CLAUDE.md` duplicated `DECISIONS.md` and was rewritten; see section A.)
+- [x] **P0-T06** Verify the three tracking documents are in place, consistent with each other, and that `git status` shows only the expected files. (Verified 2026-11-25; see section F.)
+- [ ] **P0-T07** Confirm with the user the account-name discrepancy (`mzulkifalzk25` vs `mzulkifalkz25`) and record the answer. Evidence so far supports `mzulkifalzk25` (see section A).
+
+### Required tests
+- No automated tests (documentation-only phase). Verification is by inspection: file locations, content hashes, internal links and `git status` (recorded in section F).
 
 ### Acceptance criteria
 - Three tracking files exist at the correct paths.
@@ -157,8 +162,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 1 — Project foundation
 
-**Goal:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
+**Objectives:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
 **Dependencies:** Phase 0 complete.
+**Status:** Not started.
 
 ### Tasks and subtasks
 
@@ -226,8 +232,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 2 — Authentication and role dashboards
 
-**Goal:** Complete authentication UX against mock services, role-based routing, and six role dashboards.
+**Objectives:** Complete authentication UX against mock services, role-based routing, and six role dashboards.
 **Dependencies:** Phase 1 complete.
+**Status:** Not started.
 **Open items touching this phase:** Q-TECH-01 (token storage and refresh), Q-AUTH-* (password policy, invitation expiry, session timeout).
 
 ### Tasks and subtasks
@@ -280,8 +287,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 3 — Employee and organization management
 
-**Goal:** Employee directory/profile CRUD and organization structure against mock services.
+**Objectives:** Employee directory/profile CRUD and organization structure against mock services.
 **Dependencies:** Phase 2 complete.
+**Status:** Not started.
 **Open items touching this phase:** Q-ORG-* (employee ID format, required fields), Q-LEAVE-11 (Associate PM authorization mechanism), Q-APPR-04 (role mapping).
 
 ### Tasks and subtasks
@@ -323,8 +331,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 4 — Attendance
 
-**Goal:** Attendance recording, display, classification and correction against mock services, with policy logic in pure tested functions.
+**Objectives:** Attendance recording, display, classification and correction against mock services, with policy logic in pure tested functions.
 **Dependencies:** Phase 3 complete (employees/teams exist), Phase 1 time helpers.
+**Status:** Not started.
 **Open items touching this phase:** Q-ATT-01 (checkout before 17:45), Q-ATT-02 (absent definition), Q-ATT-03 (multiple sessions), Q-ATT-04 (correction rules), Q-ATT-05 (holidays/weekends/leave days in attendance).
 
 ### Tasks and subtasks
@@ -376,8 +385,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 5 — Leave and approvals
 
-**Goal:** Leave balances, ledger, application, approval workflows and cancellation against mock services, with deterministic pure balance logic.
+**Objectives:** Leave balances, ledger, application, approval workflows and cancellation against mock services, with deterministic pure balance logic.
 **Dependencies:** Phases 3 and 4 complete (organization, scope), Phase 2 dashboards.
+**Status:** Not started.
 **Open items touching this phase:** Q-LEAVE-01…11, Q-APPR-01…08 (see DECISIONS.md).
 
 ### Tasks and subtasks
@@ -433,8 +443,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 6 — Notifications
 
-**Goal:** In-app notification center and notification preferences against mock services.
+**Objectives:** In-app notification center and notification preferences against mock services.
 **Dependencies:** Phase 5 (events), Phase 2 shell.
+**Status:** Not started.
 **Open items:** Q-NOT-01 (email channel scope), Q-NOT-02 (attendance reminder rules), Q-NOT-03 (announcement targeting and retention).
 
 ### Tasks and subtasks
@@ -468,8 +479,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 7 — Excel imports
 
-**Goal:** Safe import UX for employees, historical attendance, historical leave and leave balances, with preview, mapping, validation, duplicate detection, dry run, row errors, execution and history. Real processing is done by Django.
+**Objectives:** Safe import UX for employees, historical attendance, historical leave and leave balances, with preview, mapping, validation, duplicate detection, dry run, row errors, execution and history. Real processing is done by Django.
 **Dependencies:** Phases 3, 4, 5.
+**Status:** Not started.
 **Open items:** Q-IMP-01 (client vs server preview), Q-IMP-02 (duplicate/overwrite policy details), Q-IMP-03 (templates and required columns), Q-IMP-04 (size limits), Q-IMP-05 (historical data effect on ledger/balances).
 
 ### Tasks and subtasks
@@ -508,8 +520,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 8 — Reports, settings and audit
 
-**Goal:** Reporting, administrative settings and audit log views against mock services.
+**Objectives:** Reporting, administrative settings and audit log views against mock services.
 **Dependencies:** Phases 3–7.
+**Status:** Not started.
 **Open items:** Q-REP-01 (export formats), Q-SET-01 (settings versioning and effective dates), Q-SET-02 (holiday calendar scope), Q-AUD-01 (retention and visibility), plus any Phase 4/5 questions that affect reports.
 
 ### Tasks and subtasks
@@ -558,8 +571,9 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 ## PHASE 9 — Testing, hardening, documentation and integration readiness
 
-**Goal:** Production-quality frontend ready to integrate with the Django backend; complete backend and API documentation.
+**Objectives:** Production-quality frontend ready to integrate with the Django backend; complete backend and API documentation.
 **Dependencies:** Phases 1–8 complete (or explicitly scoped by the user).
+**Status:** Not started.
 
 ### Tasks and subtasks
 
@@ -607,6 +621,9 @@ Append entries; do not rewrite history.
 | 2026-11-25 | Planning | `CLAUDE.md` | created (generated outside Claude Code) | Awaiting placement and verification |
 | 2026-11-25 | Planning | `docs/IMPLEMENTATION_PLAN.md` | rewritten (replaces basic Phase 1 checklist) | Awaiting placement and verification |
 | 2026-11-25 | Planning | `docs/DECISIONS.md` | created | Awaiting placement and verification |
+| 2026-11-25 | Doc integration | `docs/IMPLEMENTATION_PLAN.md` | moved from repo root (content unchanged at move, SHA-256 verified), then modified | Status, next session, Phase 0 progress, per-phase Status lines, "Goal" → "Objectives", Phase 0 test note, logs |
+| 2026-11-25 | Doc integration | `docs/DECISIONS.md` | moved from repo root (SHA-256 verified), then modified | Added D-032, R-015, R-016, Q-GIT-01, Q-PROJ-01, Q-PROJ-02; R-003 status; D-011 verified; change log |
+| 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
 
 ## F. VERIFICATION LOG
 
@@ -614,10 +631,15 @@ Record real command outputs only. Never invent results.
 
 | Date | Command / check | Result | Notes |
 |---|---|---|---|
-| — | — | — | No code exists yet; no checks have been run. |
+| 2026-11-25 | `node -v`, `npm -v`, `pnpm -v`, `yarn -v` | v26.13.0, 11.20.0, 12.16.1, 1.22.22 | Phase 0 inspection |
+| 2026-11-25 | `sha256sum CLAUDE.md DECISIONS.md` (as supplied) | Identical hashes (`b98617a9…`) | Supplied `CLAUDE.md` was a copy of `DECISIONS.md` |
+| 2026-11-25 | `sha256sum docs/*.md` after move | Unchanged vs pre-move; `git hash-object` equals committed blobs `b90758b` (plan) and `0f4e116` (decisions) | Move lost no content |
+| 2026-11-25 | `git status`, `git log` | `main` ahead of `origin/main` by 3 (user commits `d0fc183`, `96c69c7`, `b25a165`); only doc files changed | No commit/push by Claude Code |
+| 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
 ## G. SESSION HISTORY
 
 | Date | Summary | Tasks completed | Blockers found | Next session start point |
 |---|---|---|---|---|
 | 2026-11-25 | Planning documents generated | None | None | P0-T06 then P1-T01 |
+| 2026-11-25 | Documentation integrated into `CLAUDE.md` + `docs/`; audit performed | P0-T05, P0-T06 | Supplied `CLAUDE.md` was a duplicate (resolved by rewrite, Q-PROJ-01); concurrent user commits during session | User review; P0-T07; then P1-T01 after approval |

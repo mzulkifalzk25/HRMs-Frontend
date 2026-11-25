@@ -23,7 +23,7 @@
 | D-008 | Initial repository contents were `.gitignore`, `README.md`, and `.vscode/mcp.json` (ignored). `.gitignore` already covers Node dependencies, build output, env variables, caches, logs and VS Code configuration. | Scaffolding must preserve these. | 2026-11-25 |
 | D-009 | Persistent file-driven workflow: `CLAUDE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DECISIONS.md` are the source of truth; Claude Code must not rely on conversation history. | Allows resuming after closing VS Code or days later. | 2026-11-25 |
 | D-010 | Package manager is **pnpm**. | User preference. | 2026-11-25 |
-| D-011 | Reported environment: Node.js 26.13.0, npm 11.20.0, pnpm 12.16.1, Yarn 1.22.22 (as reported by the user's earlier inspection; re-verify when scaffolding). | Informational. | 2026-11-25 |
+| D-011 | Environment: Node.js 26.13.0, npm 11.20.0, pnpm 12.16.1, Yarn 1.22.22 (verified by command in Claude Code on 2026-11-25; re-verify when scaffolding). | Informational. | 2026-11-25 |
 | D-012 | Do not commit or push unless explicitly asked. Never force push; never reset or rewrite history. | Data integrity and safety priority. | 2026-11-25 |
 | D-013 | Development is incremental across nine phases (0–9 as defined in the plan). The whole system must not be implemented in one operation. | Manageability. | 2026-11-25 |
 | D-014 | Phase 0 analysis found: repo nearly empty, no `package.json`, no `src`, no Vite config, no dependencies installed, history intact, clean `main`, pnpm available. | Baseline for Phase 1. | 2026-11-25 |
@@ -44,6 +44,7 @@
 | D-029 | Real Excel import processing must ultimately be done by Django. | Security and integrity. | 2026-11-25 |
 | D-030 | The frontend repository must eventually include `docs/BACKEND_SPECIFICATION.md` and `docs/API_INTEGRATION.md` with the contents described in the plan (Phase 9, with incremental notes per phase). Suggested Django apps: accounts, employees, organization, attendance, leaves, approvals, notifications, imports, reports, audit. | Backend handoff. | 2026-11-25 |
 | D-031 | Frontend and backend must follow consistent API contracts. | Integration. | 2026-11-25 |
+| D-032 | Vitest and Testing Library are part of the confirmed frontend stack (in addition to D-020). | Listed by the user in the documentation-integration request. | 2026-11-25 |
 
 ### 1.3 Roles, accounts and permissions
 
@@ -104,7 +105,7 @@ These are proposals from the Phase 0 analysis and planning. Claude Code must **a
 |---|---|---|---|
 | R-001 | Typed centralized HTTP client with normalized errors and abort support. | Consistent error handling; aligns with D-023. | Recommended |
 | R-002 | Pure, unit-tested policy functions for attendance classification, balance computation, routing and hierarchy checks. | Testability; aligns with D-023. | Recommended |
-| R-003 | Vitest + React Testing Library + jsdom for unit/component tests. | Native fit with Vite; minimal dependencies. | Recommended |
+| R-003 | Vitest + React Testing Library + jsdom for unit/component tests. | Native fit with Vite; minimal dependencies. | Vitest + Testing Library confirmed (D-032); jsdom still a recommendation |
 | R-004 | Playwright (or equivalent) for end-to-end tests in Phase 9. | Cross-browser flows; adds a dependency. | Recommended |
 | R-005 | Dates handled with explicit `Asia/Karachi` conversion through a small, well-tested helper layer; library (e.g., date-fns + timezone support, or Luxon, or native `Intl`) to be chosen at P1-T12. | Avoid browser-timezone bugs; library choice affects bundle size. | Recommended; library undecided |
 | R-006 | Path alias `@/` → `src/`. | Readability. | Recommended |
@@ -116,6 +117,8 @@ These are proposals from the Phase 0 analysis and planning. Claude Code must **a
 | R-012 | Neutralize spreadsheet formula injection on all CSV/XLSX exports. | Security. | Recommended |
 | R-013 | Idempotency keys on leave approval and import-execute requests (backend expectation documented in API docs). | Prevent duplicate effects. | Recommended |
 | R-014 | Record leave ledger entries as append-only; corrections are new compensating entries. | Auditability. | Recommended |
+| R-015 | Pin the Node.js version (`.nvmrc` and/or `engines` in `package.json`). Node 26 is very new; record any tool incompatibility found during scaffolding. | Reproducible installs. | Recommended |
+| R-016 | Use a thin typed wrapper around native `fetch` instead of adding axios. | Minimal dependencies (D-023). | Recommended |
 
 ---
 
@@ -176,6 +179,7 @@ Format: ID, question, options (neutral, not a recommendation), what it blocks.
 | Q-AUTH-04 | MFA/SSO requirement now or later? | None now; later; required | P2 |
 | Q-TECH-03 | Is CSV export sufficient or are XLSX/PDF exports required for reports and attendance? | CSV; XLSX; PDF | P4-T12, P8-T09 |
 | Q-TECH-04 | Language and date format preferences (English only? date display format)? | Define | P1, all UI |
+| Q-GIT-01 | Should work happen on feature branches (e.g. `phase-1-foundation`) or directly on `main`? | Feature branch per phase; directly on `main` | P1-T01 |
 
 ### 3.5 Organization and employees
 
@@ -204,6 +208,13 @@ Format: ID, question, options (neutral, not a recommendation), what it blocks.
 | Q-SET-02 | Holiday calendar scope (national, company, per location) and who maintains it? | Define | P8-T14 |
 | Q-AUD-01 | Audit retention, visibility (which roles can see which audit categories), and export permissions? | Define | P8-T17–T20 |
 
+### 3.7 Project and repository
+
+| ID | Question | Options to consider | Blocks |
+|---|---|---|---|
+| Q-PROJ-01 | The `CLAUDE.md` supplied on 2026-11-25 was an exact copy of `DECISIONS.md`; it was rewritten from the documented requirements. Does the user have the originally intended `CLAUDE.md` to compare and merge? | Keep rewritten version; merge original | Nothing (informational) |
+| Q-PROJ-02 | A local folder `~/Documents/backend` with its own `CLAUDE.md` exists. Is it the FormbaxHR Django backend? (Not inspected.) | Yes (record path and status); no / unrelated | P9-T12 (backend spec alignment) |
+
 ---
 
 ## 4. DECISION CHANGE LOG
@@ -214,3 +225,7 @@ Append entries when decisions are confirmed, changed or superseded. Do not delet
 |---|---|---|---|---|
 | 2026-11-25 | D-001…D-074 | Initial recording of confirmed decisions | User (earlier discussions) | Establish source of truth |
 | 2026-11-25 | Q-* | Initial recording of open questions | User and Phase 0 analysis; additional questions identified during plan creation | Prevent assumption-based implementation |
+| 2026-11-25 | D-011 | Environment versions verified by command | Claude Code (inspection) | Replace "reported" with verified facts |
+| 2026-11-25 | D-032, R-003 | Vitest + Testing Library confirmed as stack | User (documentation-integration request) | Stack list included them |
+| 2026-11-25 | R-015, R-016 | Added recommendations from Phase 0 analysis | Claude Code (proposal, not approved) | Node pinning; no axios |
+| 2026-11-25 | Q-GIT-01, Q-PROJ-01, Q-PROJ-02 | Added open questions | Claude Code (documentation audit) | Branch strategy; missing original CLAUDE.md; unknown backend folder |
