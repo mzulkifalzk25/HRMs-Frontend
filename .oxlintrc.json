@@ -28,14 +28,14 @@
           }
         ]
       }
-    ]
+    ],
+    "jsx-a11y/prefer-tag-over-role": "off"
   },
   "overrides": [
     {
       "files": ["src/components/ui/**"],
       "rules": {
-        "react/only-export-components": "off",
-        "jsx-a11y/prefer-tag-over-role": "off"
+        "react/only-export-components": "off"
       }
     },
     {
