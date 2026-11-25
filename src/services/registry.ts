@@ -1,6 +1,9 @@
 // Service registry (P1-T11, D-026): the ONLY place that chooses mock or HTTP implementations.
 // Screens and hooks import `services` from here and never import `*.mock` files (enforced by lint).
 // Switching VITE_USE_MOCK_API changes the implementations without touching UI code.
+import { createHttpAttendanceService } from '@/features/attendance/api/attendance.http'
+import { createMockAttendanceService } from '@/features/attendance/api/attendance.mock'
+import type { AttendanceService } from '@/features/attendance/api/attendance.service'
 import { createHttpAuthService } from '@/features/authentication/api/auth.http'
 import {
   createMockAuthService,
@@ -46,6 +49,7 @@ export type Services = {
   dashboard: DashboardService
   employees: EmployeeService
   organization: OrganizationService
+  attendance: AttendanceService
 }
 
 export function createServices(options: {
@@ -80,6 +84,7 @@ export function createServices(options: {
       dashboard: createMockDashboardService({ latencyMs }),
       employees: createMockEmployeeService({ latencyMs }),
       organization: createMockOrganizationService({ latencyMs }),
+      attendance: createMockAttendanceService({ latencyMs }),
     }
   }
   return {
@@ -90,6 +95,7 @@ export function createServices(options: {
     dashboard: createHttpDashboardService(options.client),
     employees: createHttpEmployeeService(options.client),
     organization: createHttpOrganizationService(options.client),
+    attendance: createHttpAttendanceService(options.client),
   }
 }
 
