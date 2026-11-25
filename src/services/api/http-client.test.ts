@@ -113,6 +113,16 @@ describe('createHttpClient: success', () => {
   })
 })
 
+describe('createHttpClient: credentials', () => {
+  it('uses same-origin by default and lets a request include cookies', async () => {
+    const { client, call } = setup([json(200, {}), json(200, {})])
+    await client.get('employees/')
+    await client.post('auth/refresh/', undefined, { credentials: 'include', auth: false })
+    expect(call(0).init.credentials).toBe('same-origin')
+    expect(call(1).init.credentials).toBe('include')
+  })
+})
+
 describe('createHttpClient: error normalization', () => {
   it('uses the DRF "detail" message and status-based code', async () => {
     const { client } = setup([

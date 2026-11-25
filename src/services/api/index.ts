@@ -5,6 +5,7 @@ import { createHttpClient } from './http-client'
 export { ApiError, apiErrorFromResponse, GENERIC_ERROR_MESSAGE, userMessage } from './api-error'
 export type { ApiErrorCode, FieldErrors } from './api-error'
 export { buildUrl, createHttpClient, DEFAULT_TIMEOUT_MS } from './http-client'
+export { camelizeKeys, parseApiResponse } from './response'
 export type { AuthHooks, HttpClient, HttpMethod, QueryParams, RequestOptions } from './http-client'
 
 export const apiClient = createHttpClient({ baseUrl: env.apiBaseUrl })
