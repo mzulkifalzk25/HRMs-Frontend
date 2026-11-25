@@ -25,9 +25,29 @@ describe('app shell (signed in)', () => {
       'aria-current',
       'page',
     )
-    // Unbuilt modules are hidden, not dead links (P2-T11).
-    expect(within(nav).getAllByRole('link')).toHaveLength(2)
-    expect(within(nav).queryByText('Employees')).not.toBeInTheDocument()
+    // Only modules that exist for the role; HR-only administration is hidden (P2-T11).
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Dashboard', 'Employees', 'Org chart', 'My profile'])
+    expect(within(nav).queryByText('Organization')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Attendance')).not.toBeInTheDocument()
+  })
+
+  it('global search opens the employee directory with the search term', async () => {
+    const { router } = await renderApp('/profile', { signedInAs: 'manager' })
+    const search = await screen.findByRole('searchbox', { name: 'Search people' })
+    await userEvent.type(search, 'hina{Enter}')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/employees'))
+    expect(router.state.location.search).toBe('?q=hina')
+  })
+
+  it('global search is disabled with an explanation for employees', async () => {
+    await renderApp('/profile', { signedInAs: 'employee' })
+    const search = await screen.findByRole('searchbox', { name: 'Search people' })
+    expect(search).toBeDisabled()
+    expect(search).toHaveAccessibleDescription('You can find your own details under My profile.')
   })
 
   it('shows breadcrumbs from route handles', async () => {

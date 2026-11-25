@@ -1,7 +1,14 @@
 // Sidebar navigation (P2-T11). Role-aware and limited to modules that exist: items for modules
 // that are not built yet are hidden, never dead links. Add items here as later phases ship them.
 // Visibility is UX only; the backend decides what each role may access (D-027).
-import { LayoutDashboard, UserRound, type LucideIcon } from 'lucide-react'
+import {
+  Building2,
+  LayoutDashboard,
+  Network,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { dashboardPathForRole, ROLES, type Role } from '@/features/authentication'
 
 export type NavItem = {
@@ -25,6 +32,25 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: LayoutDashboard,
         to: dashboardPathForRole,
         roles: ROLES,
+        end: true,
+      },
+      {
+        label: 'Employees',
+        icon: Users,
+        to: '/employees',
+        roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
+      },
+      { label: 'Org chart', icon: Network, to: '/organization/chart', roles: ROLES },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      {
+        label: 'Organization',
+        icon: Building2,
+        to: '/organization',
+        roles: ['hr_admin'],
         end: true,
       },
     ],
