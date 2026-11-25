@@ -74,6 +74,16 @@ const EMPLOYEE_PAGES = {
     (m) => m.EmployeeEditPage,
   ),
 }
+const ATTENDANCE_PAGES = {
+  mine: lazyPage(
+    () => import('@/features/attendance/pages/my-attendance-page'),
+    (m) => m.MyAttendancePage,
+  ),
+  records: lazyPage(
+    () => import('@/features/attendance/pages/attendance-records-page'),
+    (m) => m.AttendanceRecordsPage,
+  ),
+}
 const ORGANIZATION_PAGES = {
   manage: lazyPage(
     () => import('@/features/organization/pages/organization-page'),
@@ -119,6 +129,17 @@ function employeeAndOrganizationRoutes(): RouteObject[] {
               children: [{ path: 'edit', lazy: EMPLOYEE_PAGES.edit, handle: crumb('Edit') }],
             },
           ],
+        },
+      ],
+    },
+    {
+      path: 'attendance',
+      handle: crumb('Attendance'),
+      children: [
+        { index: true, lazy: ATTENDANCE_PAGES.mine },
+        {
+          element: <RequireRole allow={DIRECTORY_ROLES} />,
+          children: [{ path: 'records', lazy: ATTENDANCE_PAGES.records, handle: crumb('Records') }],
         },
       ],
     },

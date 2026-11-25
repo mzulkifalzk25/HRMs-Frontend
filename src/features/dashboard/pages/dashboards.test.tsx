@@ -2,9 +2,10 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentType } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@/features/authentication'
 import { ApiError } from '@/services/api'
+import { setMockViewer } from '@/services/mock/mock-session'
 import { renderWithProviders, withSignedInUser } from '@/test/render'
 import type { DashboardService } from '../api/dashboard.service'
 import {
@@ -161,6 +162,9 @@ function renderPage(Page: Case['Page'], service: DashboardService) {
   return renderWithProviders(withSignedInUser(user, <Page service={service} />))
 }
 
+// Live attendance panels call the attendance service as a signed-in manager (mock viewer).
+beforeEach(() => setMockViewer({ id: 'u-mgr-001', role: 'manager' }))
+
 describe.each(CASES)('$name dashboard', ({ Page, method, empty, loadedText, emptyTexts }) => {
   it('shows a loading state', () => {
     renderPage(
@@ -215,16 +219,19 @@ describe('dashboard details', () => {
     ).toBeInTheDocument()
   })
 
-  it('Employee check-in control is an honest placeholder until Phase 4', async () => {
+  it('Employee dashboard has the real check-in card (Phase 4)', async () => {
     renderPage(
       EmployeeDashboardPage,
       serviceReturning('getEmployeeDashboard', async () => buildMockEmployeeDashboard(today)),
     )
-    const button = await screen.findByRole('button', { name: 'Check out' })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAccessibleDescription(/Phase 4/)
-    expect(screen.getByText('Check-in').nextElementSibling).toHaveTextContent('9:07 AM')
-    expect(screen.getByText('Check-out').nextElementSibling).toHaveTextContent('—')
+    expect(await screen.findByRole('button', { name: 'Check in' })).toBeEnabled()
+    expect(screen.getByText('Pakistan time (Asia/Karachi)')).toBeInTheDocument()
     expect(screen.getAllByText(/days left/)).toHaveLength(3)
+  })
+
+  it('team dashboards show live attendance for the scope, not static numbers', async () => {
+    renderPage(ManagerDashboardPage, real)
+    expect(await screen.findByText(/people in scope/)).toBeInTheDocument()
+    expect(screen.queryByText('Could not load today’s attendance')).not.toBeInTheDocument()
   })
 })

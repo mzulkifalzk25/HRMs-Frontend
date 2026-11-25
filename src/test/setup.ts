@@ -1,9 +1,11 @@
 // Vitest setup: DOM matchers (toBeInTheDocument, toHaveAccessibleName, ...) and
 // DOM cleanup between tests (needed because Vitest globals are not enabled).
 import '@testing-library/jest-dom/vitest'
+import { onlineManager } from '@tanstack/react-query'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { clearAccessToken } from '@/services/auth/access-token'
+import { mockAttendanceStore } from '@/services/mock/attendance-store'
 import { mockHrStore } from '@/services/mock/hr-store'
 import { setMockViewer } from '@/services/mock/mock-session'
 
@@ -23,4 +25,6 @@ afterEach(() => {
   clearAccessToken() // never let one test's session leak into the next
   setMockViewer(null)
   mockHrStore.reset()
+  mockAttendanceStore.reset()
+  onlineManager.setOnline(true) // an 'offline' event in one test would pause every later query
 })

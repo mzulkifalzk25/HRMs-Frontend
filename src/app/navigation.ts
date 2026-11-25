@@ -3,6 +3,8 @@
 // Visibility is UX only; the backend decides what each role may access (D-027).
 import {
   Building2,
+  ClipboardList,
+  Clock,
   LayoutDashboard,
   Network,
   UserRound,
@@ -38,6 +40,13 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Employees',
         icon: Users,
         to: '/employees',
+        roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
+      },
+      { label: 'My attendance', icon: Clock, to: '/attendance', roles: ROLES, end: true },
+      {
+        label: 'Attendance records',
+        icon: ClipboardList,
+        to: '/attendance/records',
         roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
       },
       { label: 'Org chart', icon: Network, to: '/organization/chart', roles: ROLES },

@@ -556,6 +556,32 @@ export function createHrStore() {
   }
 
   return {
+    // Shared with the attendance mock (same people, same scope rules as the directory).
+    /** Ids the signed-in viewer may see (null = everyone). Throws 401 when signed out. */
+    visibleEmployeeIds(): Set<string> | null {
+      return scopeFor(requireViewer())
+    },
+    /** People attendance is recorded for, with what attendance screens display. */
+    attendancePeople(): Array<{
+      id: string
+      name: string
+      departmentId: string | null
+      departmentName: string | null
+      teamIds: string[]
+      status: Employee['status']
+      joiningDate: string
+    }> {
+      return employees.map((e) => ({
+        id: e.id,
+        name: fullName(e),
+        departmentId: e.departmentId,
+        departmentName: byId(departments, e.departmentId)?.name ?? null,
+        teamIds: [...e.teamIds],
+        status: e.status,
+        joiningDate: e.joiningDate,
+      }))
+    },
+
     reset() {
       employees = seedEmployees()
       departments = DEPARTMENTS.map((d) => ({ ...d }))

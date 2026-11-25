@@ -229,6 +229,44 @@ GET employees/?page=2&page_size=25&search=demo&department=eng&status=active&stat
 
 Organization resources (`departments/`, `designations/`, `teams/`, `projects/`): `GET` lists all (with `headcount` for departments/designations, `member_ids` for teams); `POST` creates; `PATCH {id}/` updates, and `PATCH {id}/ { "status": "inactive" }` deactivates (never delete). Rules the UI relies on: names/codes unique (`400` on `name`/`title`/`code`); teams have `department_id`, optional `team_lead_id`, and `member_ids` set as a whole list (updates each employee's teams); projects have `code`, optional `senior_pm_id` / `associate_pm_id` (must hold those roles, `400` otherwise) and `team_ids`.
 
+### Attendance (Phase 4)
+
+**The backend is authoritative** for the check-in/out instant (server clock), the Karachi calendar date, `check_in_status`, `check_out_status` and `duration_ms`, all computed in `Asia/Karachi` (D-050, plan D2). The frontend only displays them; its pure policy (`features/attendance/lib/policy.ts`) is used for live previews and tests. Instants are ISO 8601 with offset and millisecond precision; nothing is rounded and no break is deducted. Provisional rules: D-086 (Q-ATT-01…07).
+
+Record (all endpoints below return this shape):
+
+```json
+{
+  "id": "att-e-103-2026-11-24",
+  "employee_id": "e-103",
+  "employee_name": "Bilal Rana",
+  "department_name": "Engineering",
+  "date": "2026-11-24",
+  "check_in_at": "2026-11-24T09:06:46.000+05:00",
+  "check_out_at": "2026-11-24T18:39:37.000+05:00",
+  "check_in_status": "on_time",
+  "check_out_status": "within_window",
+  "duration_ms": 34371000,
+  "corrected": false
+}
+```
+
+`check_in_status` ∈ `early` (before 09:00:00), `on_time` (09:00:00–09:15:00.000 inclusive), `late` (Late-In, from 09:15:00.001; tracking only). `check_out_status` ∈ `within_window` (from 17:45:00) or `before_window` (earlier; **no penalty**, policy open Q-ATT-01). `check_out_at`, `check_out_status` and `duration_ms` are `null` while the session is open; an open session from an earlier day is shown as "Missing check-out" (never auto-closed, Q-ATT-06).
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `GET attendance/me/today/` | everyone | `{ "date": "2026-11-25", "record": <record> \| null }` |
+| `POST attendance/me/check-in/` | everyone | No body (the server takes the time). `409` `already_checked_in` if today has a record (one session per day, Q-ATT-03) |
+| `POST attendance/me/check-out/` | everyone | No body. `400` `not_checked_in`; `409` `already_checked_out` |
+| `GET attendance/me/?from=&to=` | everyone | Own records, newest first, dates inclusive (`YYYY-MM-DD`, Karachi) |
+| `GET attendance/?from=&to=&page=&page_size=&employee=&department=&team=&filter=` | HR, Manager, Team Lead, Senior/Associate PM | DRF page (§5) within the caller's directory scope (D-085); Employee `403`. `filter` ∈ `late`, `incomplete`, `corrected`. Page sizes 25/50/100; CSV export asks for up to 5,000 |
+| `GET attendance/{id}/` | in scope | `404` outside scope |
+| `POST attendance/{id}/corrections/` | HR only (`403` otherwise) | `{ "check_in_at", "check_out_at", "reason" }`; reason required (min. 5 characters), times on the record's date, check-out after check-in (`400` field errors on `reason`, `check_in_at`, `check_out_at`). Returns the updated record with `corrected: true` |
+| `GET attendance/{id}/corrections/` | in scope | Audit entries, newest first: `{ "id", "record_id", "actor_name", "at", "reason", "before": { "check_in_at", "check_out_at" }, "after": { … } }` |
+| `GET attendance/summary/` | everyone (scoped) | Today in the caller's scope: `{ "date", "total", "present", "late", "on_leave", "not_checked_in", "absent", "incomplete" }`. `absent` is the backend's number (provisional, Q-ATT-02; 0 in mock mode); `incomplete` counts earlier open sessions |
+
+Backend notes for the user's own implementation (not specified further here, D-080): one record per employee and date (unique), indexed on employee/date; corrections stored as an append-only audit table.
+
 ### Dashboards (P2-T12)
 
 Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
@@ -254,4 +292,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: attendance (P4-T14), leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+Further endpoints are added per phase: leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.

@@ -2,7 +2,7 @@
 import { SectionCard } from '@/components/shared/section-card'
 import type { DashboardService } from '../api/dashboard.service'
 import { useManagerDashboard } from '../api/use-dashboards'
-import { AttendanceSummary } from '../components/attendance-summary'
+import { LiveTeamAttendance } from '../components/live-team-attendance'
 import { DashboardHeader } from '../components/dashboard-header'
 import { ApprovalTaskList, LeaveRequestList, TeamMemberList } from '../components/dashboard-lists'
 import { DashboardQueryView } from '../components/dashboard-query-view'
@@ -16,7 +16,7 @@ export function ManagerDashboardPage({ service }: { service?: DashboardService }
         {(data) => (
           <div className="space-y-6">
             <SectionCard title="Team attendance" description="Today">
-              <AttendanceSummary summary={data.teamAttendance} />
+              <LiveTeamAttendance />
             </SectionCard>
             <div className="grid gap-6 lg:grid-cols-2">
               <SectionCard

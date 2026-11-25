@@ -30,9 +30,16 @@ describe('app shell (signed in)', () => {
       within(nav)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Dashboard', 'Employees', 'Org chart', 'My profile'])
+    ).toEqual([
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'My profile',
+    ])
     expect(within(nav).queryByText('Organization')).not.toBeInTheDocument()
-    expect(within(nav).queryByText('Attendance')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Leave')).not.toBeInTheDocument()
   })
 
   it('global search opens the employee directory with the search term', async () => {

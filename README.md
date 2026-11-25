@@ -2,7 +2,7 @@
 
 **FormbaxHR** is an enterprise HR management system (employees, attendance, leave and approvals, organization, imports, reports, notifications, audit) inspired by Zoho People in functionality, with its own design. This repository is the **frontend**. A separate Django 5.2 + Django REST Framework + PostgreSQL backend will be built later; until then the app runs on **mock services with fictional data**.
 
-> Status: **Phase 3 complete** (authentication, role dashboards, employees and organization — all in mock mode). Next: attendance (Phase 4). Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+> Status: **Phase 4 complete** (authentication, role dashboards, employees and organization, attendance — all in mock mode). Next: leave and approvals (Phase 5). Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
 ## Technology
 
@@ -61,6 +61,7 @@ Before finishing a change: `pnpm typecheck && pnpm lint && pnpm format:check && 
 - In mock mode a **"Mock data"** badge is always visible in the top bar. Mock data is fictional.
 - **Demo sign-in (mock mode only):** the login page lists one fictional account per role (HR Administrator, Manager, Senior PM, Associate PM, Team Lead, Employee) with the shared demo password; click one to fill the form. Reloading the page ends a mock session. Test links for password reset and invitations are shown on those pages in mock mode.
 - **Mock HR data:** about 20 fictional employees, departments, teams and projects live in memory and behave like a real server (each role sees only its scope; only HR can change data; duplicate emails and reporting loops are rejected). A page reload resets them.
+- **Mock attendance:** about 30 days of fictional weekday attendance (some Late-In days, early departures and forgotten check-outs). Demo accounts start today without a check-in, so you can try check-in and check-out; the mock clock is your device clock, while all times are shown and classified in Pakistan time. HR can correct records with a reason.
 - Lint blocks importing mock modules from screens or components.
 - The HTTP client (`src/services/api/`) normalizes every failure into an `ApiError`, validates responses with Zod, supports timeouts and cancellation, and has refresh-on-401 hooks. Sessions use JWT: access token in memory, refresh token in an httpOnly cookie with rotation, blacklisted on logout (wired up in Phase 2).
 - Frontend role checks are for user experience only; the backend is authoritative for authentication, permissions and business rules.

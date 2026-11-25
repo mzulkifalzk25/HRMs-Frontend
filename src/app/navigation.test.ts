@@ -6,13 +6,49 @@ import { navigationForRole, type NavSection } from './navigation'
 
 describe('navigationForRole', () => {
   const EXPECTED: Record<(typeof ROLES)[number], string[]> = {
-    hr_admin: ['Dashboard', 'Employees', 'Org chart', 'Organization', 'My profile'],
-    manager: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
-    senior_pm: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
-    associate_pm: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
-    team_lead: ['Dashboard', 'Employees', 'Org chart', 'My profile'],
-    // Employees have no directory: they see only their own record (D-044).
-    employee: ['Dashboard', 'Org chart', 'My profile'],
+    hr_admin: [
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'Organization',
+      'My profile',
+    ],
+    manager: [
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'My profile',
+    ],
+    senior_pm: [
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'My profile',
+    ],
+    associate_pm: [
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'My profile',
+    ],
+    team_lead: [
+      'Dashboard',
+      'Employees',
+      'My attendance',
+      'Attendance records',
+      'Org chart',
+      'My profile',
+    ],
+    // Employees have no directory or team records: only their own data (D-044).
+    employee: ['Dashboard', 'My attendance', 'Org chart', 'My profile'],
   }
 
   it.each(ROLES)('%s sees only the modules that exist for their role', (role) => {
