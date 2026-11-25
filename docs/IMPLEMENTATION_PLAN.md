@@ -14,11 +14,11 @@
 |---|---|
 | Overall state | Phase 1 in progress. Toolchain complete: Vite + React + TS 7, Tailwind v4 tokens, shadcn/ui (Radix), core libraries, Vitest, oxlint, Prettier. All checks pass. |
 | Current phase | Phase 1: Project foundation |
-| Current task | P1-T07 done; P1-T02 now complete. |
-| Next task | P1-T08: folder structure per architecture |
+| Current task | P1-T08 done. |
+| Next task | P1-T09: typed environment module + `.env.example` |
 | Branch | `phase-1-foundation` (created 2026-11-25 from `main` @ `0c67b6f`; D-034) |
-| Last known commits | `4c7560c` first commit; `3ffa6c8` chore: add frontend gitignore; `d0fc183`, `96c69c7`, `b25a165` (user's local commits of the planning docs at the repo root, made 2026-11-25; not pushed, `main` ahead of `origin/main` by 3) |
-| Working tree | Uncommitted P1-T02…T07 files plus doc updates (see section E). Suggested commit point: toolchain complete (R-011). | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
+| Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
+| Working tree | P1-T01…T07 committed. Uncommitted: P1-T08 (`.oxlintrc.json`, `docs/ARCHITECTURE.md`, doc updates). Verify with `git status`. | `main` is 4 commits ahead of `origin/main` (user's local commits, not pushed). Verify with `git status`. |
 | Mock mode | Not yet implemented |
 | Backend | No backend code in this repository. Relationship to the local folder `~/Documents/backend` is unconfirmed (Q-PROJ-02). |
 
@@ -39,7 +39,7 @@ Update this section at the end of every session.
 
 - Start by following the session start protocol in `CLAUDE.md` §2; confirm you are on `phase-1-foundation`.
 - Run `pnpm install`, then `pnpm typecheck && pnpm lint && pnpm build` to confirm the baseline still passes.
-- Next: **P1-T08** (folder structure per D-024). Create only folders that receive real files in this or the next tasks; no placeholder files. Then P1-T09 (typed env + `.env.example`).
+- Next: **P1-T09** (typed env module with Zod in `src/lib/env.ts`, `.env.example`, confirm `.env*` ignored). Follow `docs/ARCHITECTURE.md` for file placement and naming.
 - Before finishing a task, run: `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build`.
 - Testing notes: Vitest returns `''` for CSS imports (even `?raw`) — read files with `node:fs` in a `// @vitest-environment node` test. No Vitest globals: import `describe/it/expect` explicitly. Tailwind skips test files via `@source not` in `src/index.css`.
 - `@tanstack/react-table` agent-skills approval is **pending the user's decision** (R-020). Do not run `pnpm approve`.
@@ -170,7 +170,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** A working, strictly-typed, linted, tested, buildable React app skeleton with the service-layer pattern and app shell, preserving existing repository files.
 **Dependencies:** Phase 0 complete.
-**Status:** In progress (P1-T01–T07 done; next P1-T08).
+**Status:** In progress (P1-T01–T08 done; next P1-T09).
 
 ### Tasks and subtasks
 
@@ -194,8 +194,8 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 - [x] **P1-T06** Test tooling: Vitest + React Testing Library + jsdom; coverage config; test setup file. (2026-11-25: vitest 5.1.1 + @vitest/coverage-v8 5.1.1, jsdom 31.0.1, @testing-library/react 16.3.3 / dom 10.4.2 / user-event 14.6.13 / jest-dom 8.0.0. Config in `vite.config.ts` `test`; setup `src/test/setup.ts`; tests type-checked via `tsconfig.test.json`. Scripts `test`, `test:watch`, `test:coverage`, `test:tz`. 36 tests: App smoke, `cn`, contrast helper, 25 design-token contrast checks, TZ sanity.)
   - [x] Tests run with `TZ` set to a non-Karachi timezone in at least one CI-style script to prove timezone independence (see Phase 4). (`pnpm test:tz` = `TZ=America/Los_Angeles vitest run`; `environment.test.ts` asserts the TZ took effect. POSIX shells only.)
 - [x] **P1-T07** Lint and format: oxlint (react, react-hooks, jsx-a11y, typescript; D-033), Prettier; scripts wired. (2026-11-25: prettier 3.10.1; `.prettierrc.json` = no semicolons, single quotes, trailing commas, 100 cols, LF; `.prettierignore` excludes `src/components/ui/` (shadcn-generated), `*.md`, lockfile, build/coverage output. Scripts `format`, `format:check`. Initial run reformatted 4 files, line wrapping only.)
-- [ ] **P1-T08** Create folder structure per architecture: `src/app/{router,providers,layouts,guards}`, `src/components/{ui,shared,tables,forms,charts,feedback}`, `src/features/{authentication,dashboard,employees,attendance,leaves,approvals,organization,imports,reports,notifications,audit,settings}`, `src/services/{api,auth,mock}`, `src/hooks`, `src/lib`, `src/types`, `src/constants`, `src/styles`.
-  - [ ] Empty folders get only what is needed (no speculative files).
+- [x] **P1-T08** Create folder structure per architecture: `src/app/{router,providers,layouts,guards}`, `src/components/{ui,shared,tables,forms,charts,feedback}`, `src/features/{authentication,dashboard,employees,attendance,leaves,approvals,organization,imports,reports,notifications,audit,settings}`, `src/services/{api,auth,mock}`, `src/hooks`, `src/lib`, `src/types`, `src/constants`, `src/styles`. (2026-11-25, D-075: Git cannot track empty folders and placeholder files are forbidden, so the structure is defined in `docs/ARCHITECTURE.md` and each folder is created by the task that first adds a real file. Import boundaries enforced by oxlint: no mock imports outside the service layer, components may not import features, no cycles.)
+  - [x] Empty folders get only what is needed (no speculative files). (No empty folders or `.gitkeep` files created.)
 - [ ] **P1-T09** Environment configuration.
   - [ ] Typed env module validating `VITE_API_BASE_URL` and `VITE_USE_MOCK_API` with Zod; fails clearly if invalid.
   - [ ] `.env.example` with `VITE_API_BASE_URL=http://localhost:8000/api/v1` and `VITE_USE_MOCK_API=true`.
@@ -205,7 +205,7 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
   - [ ] Normalized `ApiError` type (status, code, message, field errors).
   - [ ] Refresh-on-401 hook point (implementation blocked by Q-TECH-01; leave a typed interface and a documented stub).
 - [ ] **P1-T11** Service-contract pattern and service registry.
-  - [ ] Pattern: `XService` interface in `features/<x>/api/`, `x.http.ts`, `x.mock.ts`, and a registry selecting by `VITE_USE_MOCK_API`.
+  - [ ] Pattern: `XService` interface in `features/<x>/api/`, `x.http.ts`, `x.mock.ts`, and a registry selecting by `VITE_USE_MOCK_API`. (Registry location `src/services/registry.ts`, shared mock infrastructure in `src/services/mock/`; see `docs/ARCHITECTURE.md` §3.)
   - [ ] One reference implementation (e.g., a `HealthService`) proving the swap works.
 - [ ] **P1-T12** Time/date library for `Asia/Karachi`.
   - [ ] Pure helpers: convert instant → Karachi wall-clock, Karachi calendar date of an instant, format helpers.
@@ -640,6 +640,8 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P1-T07 | `.prettierrc.json`, `.prettierignore` | created | Prettier config |
 | 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Commit message convention (`CLAUDE.md` §8, D-039) |
 | 2026-11-25 | Workflow | `CLAUDE.md`, `docs/DECISIONS.md` | modified | Added `chore:` commit type (D-039) |
+| 2026-11-25 | P1-T08 | `docs/ARCHITECTURE.md` | created | Folder map, dependency rules, service pattern, naming, deviations |
+| 2026-11-25 | P1-T08 | `.oxlintrc.json`, `CLAUDE.md`, `docs/DECISIONS.md` | modified | Import-boundary and no-cycle lint rules; links to ARCHITECTURE.md; D-075 |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -684,6 +686,9 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `pnpm add -D prettier@^3.10.0` | 3.10.1; no exclusions; no new permission requests | P1-T07 |
 | 2026-11-25 | `prettier --list-different .` then per-file diff preview | 4 files (`App.tsx`, `index.css`, `utils.test.ts`, `tsconfig.json`), line wrapping only; applied with `pnpm format` | P1-T07 |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `test`, `test:tz`, `build` | All exit 0; 36/36 tests in both runs; build output hashes unchanged (`index-DNW-yCox.css`, `index-8f33dHgQ.js`); `src/components/ui/button.tsx` untouched | P1-T07 |
+| 2026-11-25 | `oxlint --rules` | `eslint/no-restricted-imports` and `import/no-cycle` available | P1-T08 |
+| 2026-11-25 | Boundary probe (scratchpad project) with the final repo `.oxlintrc.json` | Blocked: 6 violations (feature→`@/services/mock/*`, relative and nested; feature→`./x.mock`, `../api/x.mock`; component→feature); cycle a↔b reported. Allowed: `src/services/registry.ts`, `src/services/api/*`, `*.mock.ts`, `*.test.ts`. First attempt missed nested paths (`*` vs `**`), fixed | P1-T08 |
+| 2026-11-25 | `pnpm lint`, `pnpm format:check` on repo after P1-T08 | Exit 0 | P1-T08 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -699,3 +704,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | P1-T05: core libraries installed and verified (TS 7 types, Karachi conversion) | P1-T05 | Agent-skills approval pending user (R-020) | P1-T06 |
 | 2026-11-25 | P1-T06: Vitest + Testing Library + jsdom; 36 tests incl. token contrast guard and TZ run | P1-T06 | None | P1-T07 |
 | 2026-11-25 | P1-T07: Prettier configured; toolchain complete (P1-T02 closed) | P1-T07, P1-T02 | None | P1-T08 |
+| 2026-11-25 | P1-T08: architecture guide + lint-enforced import boundaries (no empty folders) | P1-T08 | None | P1-T09 |

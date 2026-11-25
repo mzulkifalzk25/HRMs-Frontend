@@ -9,6 +9,7 @@ Do not rely on conversation history. These three files are the source of truth:
 | `CLAUDE.md` (this file) | How to work in this repository |
 | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Phases, tasks, acceptance criteria, progress, logs |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Confirmed decisions (D-), recommendations (R-), open questions (Q-) |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Folder map, import rules (some enforced by lint), naming conventions |
 
 ---
 
@@ -38,7 +39,7 @@ At the start of every session, before writing code:
 
 ## 3. Working conventions
 
-- **Architecture.** Follow D-024. Inside `src/`: `app/` (router, providers, layouts, guards), `components/` (ui, shared, tables, forms, charts, feedback), `features/<feature>/` (with `api/`, `components/`, `pages/`, `schemas/`, `lib/`, `types.ts`), `services/` (api, auth, mock), `hooks/`, `lib/`, `types/`, `constants/`, `styles/`. Create folders only when they're needed. Any deviation needs a recorded technical reason.
+- **Architecture.** Follow [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (folder map, dependency rules, naming; based on D-024/D-075). Inside `src/`: `app/` (router, providers, layouts, guards), `components/` (ui, shared, tables, forms, charts, feedback), `features/<feature>/` (with `api/`, `components/`, `pages/`, `schemas/`, `lib/`, `types.ts`), `services/` (api, auth, mock), `hooks/`, `lib/`, `types/`, `constants/`, `styles/`. Create folders only when they're needed. Any deviation needs a recorded technical reason.
 - **Service layer (D-026).** Each domain has a typed service interface with an HTTP and a mock implementation, selected by `VITE_USE_MOCK_API`. UI components never import mock data directly. They use TanStack Query hooks that call the service interface.
 - **Business logic** (attendance classification, durations, balances, routing, workflow, hierarchy checks) lives in pure, unit-tested functions in `features/*/lib`, not in components.
 - **Time.** All policy decisions use `Asia/Karachi` (D-050), never the browser timezone. Keep actual timestamps (ISO 8601 with offset). Never round to official times.
