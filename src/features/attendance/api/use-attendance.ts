@@ -57,7 +57,12 @@ export function useAttendanceSummary(service?: AttendanceService) {
 
 function useRefresh() {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: attendanceKeys.all })
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.all }),
+      // Attendance changes decide which reminders are due next (P6-T07).
+      queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    ])
 }
 
 /**

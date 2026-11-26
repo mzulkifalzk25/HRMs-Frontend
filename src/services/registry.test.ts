@@ -32,6 +32,14 @@ describe('createServices', () => {
     expect(client.getMock).not.toHaveBeenCalled()
   })
 
+  it('provides every domain service in both modes, including notifications (P6)', () => {
+    for (const useMockApi of [true, false]) {
+      const services = createServices({ useMockApi, client: fakeClient({}), mockLatencyMs: 0 })
+      expect(typeof services.notifications.unreadCount).toBe('function')
+      expect(typeof services.announcements.create).toBe('function')
+    }
+  })
+
   it('returns HTTP implementations when useMockApi is false', async () => {
     const client = fakeClient({ status: 'ok', checked_at: '2026-11-25T09:15:00+05:00' })
     const services = createServices({ useMockApi: false, client })
