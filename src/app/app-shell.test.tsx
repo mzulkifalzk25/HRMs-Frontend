@@ -35,11 +35,14 @@ describe('app shell (signed in)', () => {
       'Employees',
       'My attendance',
       'Attendance records',
+      'My leave',
+      'Approvals',
+      'Leave records',
       'Org chart',
       'My profile',
     ])
     expect(within(nav).queryByText('Organization')).not.toBeInTheDocument()
-    expect(within(nav).queryByText('Leave')).not.toBeInTheDocument()
+    expect(within(nav).queryByText('Leave balances')).not.toBeInTheDocument()
   })
 
   it('global search opens the employee directory with the search term', async () => {

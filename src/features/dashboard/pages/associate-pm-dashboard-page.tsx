@@ -5,7 +5,8 @@ import type { DashboardService } from '../api/dashboard.service'
 import { useAssociatePmDashboard } from '../api/use-dashboards'
 import { LiveTeamAttendance } from '../components/live-team-attendance'
 import { DashboardHeader } from '../components/dashboard-header'
-import { ApprovalTaskList, TeamMemberList } from '../components/dashboard-lists'
+import { TeamMemberList } from '../components/dashboard-lists'
+import { LiveApprovalTasks } from '../components/live-leave'
 import { DashboardQueryView } from '../components/dashboard-query-view'
 
 export function AssociatePmDashboardPage({ service }: { service?: DashboardService }) {
@@ -24,10 +25,7 @@ export function AssociatePmDashboardPage({ service }: { service?: DashboardServi
                 title="Review and recommendation tasks"
                 description="Your input before the final decision"
               >
-                <ApprovalTaskList
-                  tasks={data.reviewTasks}
-                  emptyText="No requests are waiting for your recommendation."
-                />
+                <LiveApprovalTasks emptyText="No requests are waiting for your recommendation." />
               </SectionCard>
               <SectionCard title="Assigned team" description={`${data.team.length} people`}>
                 <TeamMemberList members={data.team} />

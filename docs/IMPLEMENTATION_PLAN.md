@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1–4 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance (check-in/out, history, calendar, team and organization records, HR corrections with audit history, CSV export, live dashboards). 428 tests; all checks pass. |
-| Current phase | Phase 4 complete (PR into `dev-main` open); Phase 5 next after the user merges. |
-| Current task | User review and merge of the Phase 4 PR; manual browser checks pending |
-| Next task | Phase 5 — P5-T01 (leave types). Open: Q-LEAVE-*, Q-APPR-*; Q-ATT-01…07 still provisional (D-086) |
-| Branch | `phase-4-attendance` (from `dev-main` @ `79797cd`, published; PR into `dev-main`). Phases 1–3 merged into `dev-main` (PRs #1, #2, #3). |
+| Overall state | Phases 1–5 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance, leave and approvals (balances, ledger, application, routing, approval workflow, HR overrides, cancellation, HR allocation, live dashboards). 536 tests; all checks pass. |
+| Current phase | Phase 5 complete (PR into `dev-main` open); Phase 6 next after the user merges. |
+| Current task | User review and merge of the Phase 5 PR; manual browser checks pending |
+| Next task | Phase 6 — P6-T01 (notifications). Still provisional: Q-LEAVE-01…03, Q-APPR-07 (D-090), Q-ATT-01…07 (D-086), Q-ORG-01…05 (D-084) |
+| Branch | `phase-5-leave-approvals` (from `dev-main` @ `a8e04c6`, published; PR into `dev-main`). Phases 1–4 merged into `dev-main` (PRs #1–#4). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 4 committed and pushed (see `git log`). Verify with `git status`. |
+| Working tree | Phase 5 committed and pushed (see `git log`). Verify with `git status`. |
 | Mock mode | Implemented: all services run on in-memory mocks (`VITE_USE_MOCK_API=true`), "Mock data" badge in the top bar |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -38,12 +38,11 @@
 
 Update this section at the end of every session.
 
-- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 5 starts only after the user has merged the Phase 4 PR: update `dev-main`, create `phase-5-leave-approvals`, publish it.
-- Ask about Q-LEAVE-* and Q-APPR-* before building those rules; Q-ATT-01…07 (D-086) and Q-ORG-01…05 (D-084) are still provisional.
-- Phase 5 builds on: `services/mock/hr-store.ts` (scope, managers, roles), `services/mock/attendance-store.ts` (pattern for a store built on the HR store; approved leave may later feed attendance, Q-ATT-05), dashboards' leave widgets (P2), `src/lib/csv.ts` for exports.
-- Patterns: registry-reachable modules (schemas, contracts, `*.http.ts`, `*.mock.ts`, pure lib) import other features' **pure modules directly**, never their `index.ts` (import cycle; lint catches it). Shared controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`, `PaginationBar`. Effects that set form errors depend on stable strings.
-- Testing: `renderApp(path, { signedInAs })`; setup resets the mock stores, the viewer and TanStack Query's `onlineManager` after each test (an `offline` event otherwise pauses every later query). To freeze the clock use `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed (`mockAttendanceStore.reset()`). jsdom renders both desktop table and mobile list (scope with `within(table)`). Run long suites with `timeout` and `--testTimeout`.
-- Bundle: main chunk 533 kB (mock stores bundled via the registry, R-022); consider loading mocks only in mock mode (P9-T06).
+- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 6 starts only after the user has merged the Phase 5 PR: update `dev-main`, create `phase-6-notifications`, publish it.
+- Ask about the open notification questions (Q-NOTIF-*) before building those rules. HR must receive every leave lifecycle event (D-064): requests already list HR as `mandatory` recipients, and Phase 6 turns those into notifications.
+- Phase 6 builds on: `services/mock/leave-store.ts` (lifecycle events: submit, recommend, decide, override, cancel), `services/mock/attendance-store.ts`, dashboards' notification previews (P2), the top bar.
+- Patterns: registry-reachable modules import other features' **pure modules directly**, never their `index.ts` (lint catches cycles). Pure rules in `features/*/lib`, mock backends run the same functions. Shared controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`, `PaginationBar`, `ConfirmDialog` (with reason).
+- Testing: `renderApp(path, { signedInAs })`; setup resets the HR, leave and attendance stores, the viewer and TanStack Query's `onlineManager`. Freeze the clock with `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed the stores. jsdom renders both desktop table and mobile list (scope with `within(table)`); Radix dialogs hide the page (`aria-hidden`) while open or closing, so grab regions before opening a dialog. Run long suites with `timeout` and `--testTimeout`.
 - Frontend focus (D-080); commit per `CLAUDE.md` §8; never merge PRs.
 
 ---
@@ -101,7 +100,9 @@ Confirmed access principles:
 - Leave application fields: leave type, start date, end date, requested duration, reason, optional attachment, selected manager(s) where applicable.
 - HR automatically receives leave lifecycle notifications and cannot be removed from recipients.
 - Distinguish notification recipients, reviewers, approvers and final decision-makers (as separate concepts in types and UI).
-- **Not decided (do not assume):** carry-forward, encashment, expiration, weekend policy, calendar vs anniversary year, mid-year proration, negative balances, half-day leave (see Q-LEAVE-*).
+- Confirmed 2026-11-25 (D-088): duration counts Monday–Friday, public holidays excluded, whole days only; no negative balances; no overlapping requests; backdating allowed; requester may cancel approved leave until the day before it starts (days returned); attachments optional, PDF/JPG/PNG up to 5 MB.
+- Confirmed 2026-11-25 (D-089): Team Lead → own manager(s); Senior PM → HR; HR Administrator → another HR Administrator; with several managers any one decides; Team Lead and Associate PM are optional reviewers; HR may decide any pending request with a reason.
+- **Not decided (do not assume):** carry-forward, encashment, expiration, calendar vs anniversary year, mid-year proration, escalation (Q-LEAVE-01…03, Q-APPR-07; provisional D-090).
 
 ### D4. Approval hierarchy (confirmed)
 - Manager is the final approval authority for their team.
@@ -394,37 +395,37 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Leave balances, ledger, application, approval workflows and cancellation against mock services, with deterministic pure balance logic.
 **Dependencies:** Phases 3 and 4 complete (organization, scope), Phase 2 dashboards.
-**Status:** Not started.
-**Open items touching this phase:** Q-LEAVE-01…11, Q-APPR-01…08 (see DECISIONS.md).
+**Status:** Complete (2026-11-25): P5-T01…T18 implemented and verified in mock mode on `phase-5-leave-approvals`. Not visually checked in a browser.
+**Open items touching this phase:** user answered Q-LEAVE-04…11, Q-APPR-01…06 and Q-APPR-08 (D-088, D-089). Still open, handled provisionally (D-090): Q-LEAVE-01…03 (leave year, proration, carry-forward), Q-APPR-07 (escalation).
 
 ### Tasks and subtasks
 
-- [ ] **P5-T01** Types and schemas: `LeaveType` (`medical_sick`, `casual`, `annual`), `LeaveRequest`, `LeaveBalance`, `LeaveLedgerEntry`, `ApprovalStep`, `ApprovalAction`, `ReviewComment`, `Recommendation`, `NotificationRecipient`.
-  - [ ] Roles in a request modelled separately: recipient, reviewer, approver, final decision-maker.
-- [ ] **P5-T02** Pure balance module: allocated, used (approved only), remaining; per-category isolation; pending/declined/cancelled never deduct.
-  - [ ] Negative-balance behavior **BLOCKED by Q-LEAVE-07**. Validation hook exists but the rule is not guessed.
-- [ ] **P5-T03** Ledger model and view: every change (allocation, approval deduction, reversal if cancellation allowed, HR adjustment) is an immutable entry with actor, timestamp, reason and reference to the request.
-- [ ] **P5-T04** `LeaveService` and `ApprovalService` interfaces; mock and HTTP implementations.
-  - [ ] Mock implementation simulates idempotency (double approve is rejected) and concurrent-decision conflict responses.
-- [ ] **P5-T05** Leave balances page for employees (allocated/used/remaining per category) and HR view for any employee.
-- [ ] **P5-T06** Leave application form: type, start date, end date, requested duration, reason, optional attachment, selected manager(s) where applicable.
-  - [ ] Duration computation (weekends, holidays, half-days) **BLOCKED by Q-LEAVE-04/05/06**. Until answered, the form takes duration from a single isolated function whose rule is documented as provisional, or asks the user which provisional behavior to use.
-  - [ ] Overlap, backdated and past-dated leave rules **BLOCKED by Q-LEAVE-09**.
-  - [ ] Attachment: type and size limits **BLOCKED by Q-LEAVE-10** for specific values (UI enforces configurable constants).
-- [ ] **P5-T07** Routing logic (pure, tested) implementing confirmed rules: Employee → selected manager(s); Employee without manager → HR; Manager → HR; Associate PM → Senior PM. HR, Senior PM and Team Lead own-leave routing **BLOCKED by Q-APPR-01/02**.
-- [ ] **P5-T08** Workflow engine representation supporting configurable **sequential** and **parallel** review. Parallel completion rule (all/any/threshold) **BLOCKED by Q-APPR-03**; make the rule a configurable field and do not choose a default.
-- [ ] **P5-T09** Approval inbox for approvers (pending, history), filtering and sorting.
-- [ ] **P5-T10** Review actions: Manager final approve/decline; Associate PM participation (cannot override Manager's final authority); Team Lead review, comment, recommend; Senior PM approval of Associate PM leave; HR monitoring view.
-  - [ ] Authorization of Associate PM **BLOCKED by Q-APPR-05** (how "authorized" is granted).
-  - [ ] Meaning of "Project Manager's final authority" versus "Manager" **BLOCKED by Q-APPR-04**.
-- [ ] **P5-T11** Self-approval prevention (UI disabling and pure rule tests; backend must enforce).
-- [ ] **P5-T12** Rejection requires a reason (form validation and tests).
-- [ ] **P5-T13** Cancellation by requester for pending requests; cancellation of **approved** leave **BLOCKED by Q-LEAVE-08**.
-- [ ] **P5-T14** Leave history for employees; HR-wide leave list with filters (status, type, department, dates).
-- [ ] **P5-T15** Leave allocation configuration UI for HR (allocations per category per employee or policy level; entry points only; calendar/anniversary logic **BLOCKED by Q-LEAVE-01/02/03**).
-- [ ] **P5-T16** HR as mandatory notification recipient on leave lifecycle events (cannot be removed in UI; tests).
-- [ ] **P5-T17** Dashboard integration: replace placeholder leave data on all dashboards with the leave services.
-- [ ] **P5-T18** Update `API_INTEGRATION.md` and backend specification notes: transactional approval with `select_for_update`, unique constraints preventing duplicate deductions, ledger immutability, state machine for request status, idempotency keys.
+- [x] **P5-T01** Types and schemas: `LeaveType` (`medical_sick`, `casual`, `annual`), `LeaveRequest`, `LeaveBalance`, `LeaveLedgerEntry`, `ApprovalStep`, `ApprovalAction`, `ReviewComment`, `Recommendation`, `NotificationRecipient`. (`features/leave/schemas/leave.schema.ts`: `LeaveRequest`, `LeaveRequestDetail`, `LeaveBalance`, `LedgerEntry`, `ApprovalStep`, `ApprovalAction` (comments and recommendations are action kinds), `Participant` (recipients), `RoutePreview`, `ApprovalTask`, `LeaveSummary`, application form schema.)
+  - [x] Roles in a request modelled separately: recipient, reviewer, approver, final decision-maker. (`participant.kind` ∈ decision_maker / reviewer / recipient; with "any one decides" (D-089) approver and final decision-maker are the same people; `all`/sequential rules are supported by the engine.)
+- [x] **P5-T02** Pure balance module: allocated, used (approved only), remaining; per-category isolation; pending/declined/cancelled never deduct. (`lib/balance.ts` computed from the ledger.)
+  - [x] Negative-balance behavior **answered: not allowed (D-088)**. Submission and approval are refused when the balance does not cover the request; pending requests do not reserve days.
+- [x] **P5-T03** Ledger model and view: every change (allocation, approval deduction, reversal if cancellation allowed, HR adjustment) is an immutable entry with actor, timestamp, reason and reference to the request. (Append-only; one deduction/reversal per request; Ledger tab on My leave and HR balances page.)
+- [x] **P5-T04** `LeaveService` and `ApprovalService` interfaces; mock and HTTP implementations.
+  - [x] Mock implementation simulates idempotency (double approve is rejected) and concurrent-decision conflict responses. (409 `already_decided`; 409 `conflict` on a stale `version`; 409 `insufficient_balance`.)
+- [x] **P5-T05** Leave balances page for employees (allocated/used/remaining per category) and HR view for any employee. (`/leave`, `/leave/balances`.)
+- [x] **P5-T06** Leave application form: type, start date, end date, requested duration, reason, optional attachment, selected manager(s) where applicable. (`/leave/apply` with live duration, balance after the request, participants preview.)
+  - [x] Duration computation **answered (D-088)**: Monday–Friday, public holidays excluded (none defined until P8-T14), whole days only (`lib/duration.ts`).
+  - [x] Overlap, backdated and past-dated leave rules **answered (D-088)**: no overlap with own pending/approved leave; past dates allowed and marked backdated.
+  - [x] Attachment rules **answered (D-088)**: optional, PDF/JPG/PNG up to 5 MB (`LEAVE_ATTACHMENT_RULES`).
+- [x] **P5-T07** Routing logic (pure, tested) implementing confirmed rules: Employee → selected manager(s); Employee without manager → HR; Manager → HR; Associate PM → Senior PM. HR, Senior PM and Team Lead own-leave routing **answered (D-089)**: Team Lead → own manager(s), Senior PM → HR, HR Administrator → another HR Administrator. (`lib/routing.ts`; Associate PM without a Senior PM → HR, provisional D-090.)
+- [x] **P5-T08** Workflow engine representation supporting configurable **sequential** and **parallel** review. Parallel completion rule **answered (D-089): any one decides**; the field stays configurable (`any`/`all`) and every rule is tested. (`lib/workflow.ts`; no escalation, provisional D-090 / Q-APPR-07.)
+- [x] **P5-T09** Approval inbox for approvers (pending, history), filtering and sorting. (`/leave/approvals`: type filter, sort by submission or start.)
+- [x] **P5-T10** Review actions: Manager final approve/decline; Associate PM participation (cannot override Manager's final authority); Team Lead review, comment, recommend; Senior PM approval of Associate PM leave; HR monitoring view. (Request page; HR monitoring = Leave records; HR override with reason, D-089.)
+  - [x] Authorization of Associate PM **answered (D-089)**: the Associate PM of the requester's project is an optional reviewer automatically.
+  - [x] "Project Manager's final authority" **answered (D-089)**: means the Manager.
+- [x] **P5-T11** Self-approval prevention (UI disabling and pure rule tests; backend must enforce). (Requester gets only `cancel`; routing never assigns the requester.)
+- [x] **P5-T12** Rejection requires a reason (form validation and tests). (Declines, HR overrides and comments: min. 5 characters, UI and mock.)
+- [x] **P5-T13** Cancellation by requester for pending requests; cancellation of **approved** leave **answered (D-088)**: requester until the day before the start, days returned by a ledger reversal.
+- [x] **P5-T14** Leave history for employees; HR-wide leave list with filters (status, type, department, dates). (`/leave` requests tab; `/leave/records` with status, type, department (HR), employee, dates, pagination and CSV export; managers and leads see their scope.)
+- [x] **P5-T15** Leave allocation configuration UI for HR (allocations per category per employee or policy level; entry points only; calendar/anniversary logic **BLOCKED by Q-LEAVE-01/02/03**). (Per-employee adjustments with a reason; policy 7/7/7 shown read-only; calendar year, no proration/carry-forward, provisional D-090.)
+- [x] **P5-T16** HR as mandatory notification recipient on leave lifecycle events (cannot be removed in UI; tests). (HR is a `mandatory` recipient on every request and shown locked; the notifications themselves come in Phase 6.)
+- [x] **P5-T17** Dashboard integration: replace placeholder leave data on all dashboards with the leave services. (Approval inbox, team/own requests, own balances, Senior PM and HR leave counts; attendance "on leave" count from approved leave.)
+- [x] **P5-T18** Update `API_INTEGRATION.md` and backend specification notes: transactional approval with `select_for_update`, unique constraints preventing duplicate deductions, ledger immutability, state machine for request status, idempotency keys. (§6 Leave and approvals; full specification in P9-T12, D-080.)
 
 ### Required tests
 - Balance: approved deducts from selected category only; pending/declined/cancelled do not; categories independent; allocated/used/remaining consistency.
@@ -671,6 +672,10 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P4 | `src/services/mock/attendance-store.ts` (+test), `src/lib/csv.ts` (+test), `src/hooks/{use-now,use-online-status}.ts`, `src/features/dashboard/components/live-team-attendance.tsx` | created | Mock attendance backend, CSV helper, clock/online hooks, live team attendance widget |
 | 2026-11-25 | P4 | `src/services/mock/hr-store.ts`, `src/services/registry.ts`, `src/test/setup.ts`, `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/app-shell.test.tsx`, dashboard pages, widgets and tests | modified | Scope helpers for attendance, registry wiring, test resets (stores, `onlineManager`), routes and nav, dashboards use the attendance service |
 | 2026-11-25 | P4 | `docs/{IMPLEMENTATION_PLAN,DECISIONS,API_INTEGRATION,ARCHITECTURE}.md`, `README.md` | modified | Phase 4 progress, D-086/D-087, attendance endpoints, status |
+| 2026-11-25 | P5 | `src/features/leave/**` | created | Policy, duration, balance, routing, workflow (+tests), labels, export, schemas, services (+http, mock), hooks, components, six pages, tests |
+| 2026-11-25 | P5 | `src/services/mock/leave-store.ts` (+test), `src/features/dashboard/components/live-leave.tsx` | created | Mock leave backend, live leave dashboard widgets |
+| 2026-11-25 | P5 | `src/services/mock/{hr-store,attendance-store}.ts` (+test), `src/services/registry.ts`, `src/test/setup.ts`, `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/app-shell.test.tsx`, dashboard pages, lists and tests | modified | Leave org view, "on leave" count, registry, store reset, routes and nav, dashboards on the leave service |
+| 2026-11-25 | P5 | `docs/{IMPLEMENTATION_PLAN,DECISIONS,API_INTEGRATION,ARCHITECTURE}.md`, `README.md` | modified | User answers D-088/D-089, D-090, D-091, leave endpoints, progress |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -757,6 +762,14 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `vitest run src/features/attendance/pages` | First 6/10 failed (tables "not found"). Isolated run passed in 100 ms → cause: the offline test's `offline` event set TanStack Query's global `onlineManager` offline, pausing every later query (test-isolation bug). Fixed: test dispatches `online` again and setup resets `onlineManager` → 10/10 | P4 |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 4) | All exit 0; 32 files / 428 tests; 3 × 428 in timezone runs. Main chunk 533.30 kB / 167.52 kB gzip (above Vite's 500 kB warning again, R-022); attendance pages own chunks (6.01 kB, 9.52 kB) | P4 acceptance |
 | 2026-11-25 | Dev server `curl` of `/`, `/attendance` and attendance modules | All 200; no errors; server stopped. Not a visual check | P4 |
+| 2026-11-25 | `git fetch`, `dev-main` fast-forward to `a8e04c6` (PR #4 merged); `phase-5-leave-approvals` created and pushed | — | Phase 5 start (D-083) |
+| 2026-11-25 | User answers to Q-LEAVE-04…11, Q-APPR-01…06, Q-APPR-08 (two question rounds) | Recorded as D-088, D-089 | Phase 5 rules |
+| 2026-11-25 | `vitest run src/features/leave/lib` | 65/65 first run (duration incl. weekends/holidays/year boundary, attachments, balances and reconciliation, every routing rule incl. self-exclusion, workflow any/all/sequential, required vs optional review, overrides, cancel windows, status derivation) | P5-T02, T07, T08, T11 |
+| 2026-11-25 | `vitest run src/services/mock src/features/leave` | 130/130 first run (leave store: submission validation, routing, recommend → approve with single deduction, 409 already_decided / conflict / insufficient_balance, decline reason, self-approval 403, any-one-manager, HR override, cancellation with reversal, scope, HR adjustments; attendance store updated for "on leave") | P5-T03, T04, T12, T13 |
+| 2026-11-25 | `vitest run src/app src/features/dashboard src/features/attendance` | First 6 failures: dashboard unit tests rendered without a router (new links) and expected leave empty states from the stubbed dashboard service; wrapped in `MemoryRouter`, leave empty texts moved to the leave tests, new live-leave dashboard test → 139/139 | P5-T17 |
+| 2026-11-25 | `vitest run src/features/leave/pages` | First runs: duplicate links (desktop table + mobile list), section and picker both named "Employee" (section renamed), curly quotes, page `aria-hidden` while dialogs close (test timing) → 11/11 | P5 screens |
+| 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 5) | All exit 0; 38 files / 536 tests; 3 × 536 in timezone runs. Main chunk 464.69 kB / 145.79 kB gzip (under Vite's 500 kB warning); leave pages own chunks (2.4–5.0 kB) | P5 acceptance |
+| 2026-11-25 | Dev server `curl` of `/leave`, `/leave/apply`, `/leave/approvals` and leave modules | All 200; no errors; server stopped. Not a visual check | P5 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -778,3 +791,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | Phase 2 implemented and verified: auth (login, reset, invitations, JWT session D-078/D-079, cross-tab), guards, role nav, six dashboards; tests found and fixed a redirect race and a service-instance flaw | P2-T01…T20 | Manual browser checks pending (user); Q-AUTH-01…04 provisional (D-081) | Phase 3 (Q-ORG-* first) |
 | 2026-11-25 | Phase 3 implemented and verified: employees directory/profile/create/edit/deactivate, organization management, reporting hierarchy with cycle checks, org chart, scope-aware mock backend; tests found a render loop and duplicate field names (fixed) | P3-T01…T15 | Q-ORG-01…05 provisional (D-084); manual browser checks pending | Phase 4 after PR merge |
 | 2026-11-25 | Phase 4 implemented and verified: pure Karachi attendance policy, mock attendance backend, check-in/out card, history, calendar, team/org records with filters, HR corrections with reason and audit history, CSV export, live dashboards; tests found a query-pausing test-isolation bug (fixed) | P4-T01…T14 | Q-ATT-01…07 provisional (D-086); manual browser checks pending | Phase 5 after PR merge |
+| 2026-11-25 | Phase 5 implemented and verified: user answered the leave/approval questions (D-088, D-089); pure duration, balance, routing and workflow modules; mock leave backend with concurrency, idempotency and an append-only ledger; balances, application, request page, approvals inbox, leave records, HR balances; live dashboards | P5-T01…T18 | Q-LEAVE-01…03, Q-APPR-07 provisional (D-090); manual browser checks pending | Phase 6 after PR merge |

@@ -5,10 +5,11 @@ import { StatCard } from '@/components/shared/stat-card'
 import type { DashboardService } from '../api/dashboard.service'
 import { useEmployeeDashboard } from '../api/use-dashboards'
 import { DashboardHeader } from '../components/dashboard-header'
-import { ActivityList, LeaveRequestList } from '../components/dashboard-lists'
+import { ActivityList } from '../components/dashboard-lists'
+import { LiveLeaveBalances, LiveMyLeave } from '../components/live-leave'
 import { DashboardQueryView } from '../components/dashboard-query-view'
 import { CheckInCard } from '@/features/attendance'
-import { LeaveBalances, NotificationPreviewList } from '../components/dashboard-widgets'
+import { NotificationPreviewList } from '../components/dashboard-widgets'
 
 export function EmployeeDashboardPage({ service }: { service?: DashboardService }) {
   const query = useEmployeeDashboard(service)
@@ -47,17 +48,13 @@ export function EmployeeDashboardPage({ service }: { service?: DashboardService 
                   description="This leave year"
                   className="sm:col-span-3"
                 >
-                  <LeaveBalances balances={data.leaveBalances} />
+                  <LiveLeaveBalances />
                 </SectionCard>
               </div>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
               <SectionCard title="Recent leave requests">
-                <LeaveRequestList
-                  requests={data.recentLeaveRequests}
-                  showEmployee={false}
-                  emptyText="You have not requested leave recently."
-                />
+                <LiveMyLeave />
               </SectionCard>
               <SectionCard title="Notifications">
                 <NotificationPreviewList notifications={data.notifications} />

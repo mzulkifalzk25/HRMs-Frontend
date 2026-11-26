@@ -3,8 +3,12 @@
 // Visibility is UX only; the backend decides what each role may access (D-027).
 import {
   Building2,
+  CalendarDays,
+  CalendarRange,
   ClipboardList,
   Clock,
+  ListChecks,
+  Scale,
   LayoutDashboard,
   Network,
   UserRound,
@@ -49,6 +53,19 @@ export const NAV_SECTIONS: NavSection[] = [
         to: '/attendance/records',
         roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
       },
+      { label: 'My leave', icon: CalendarDays, to: '/leave', roles: ROLES, end: true },
+      {
+        label: 'Approvals',
+        icon: ListChecks,
+        to: '/leave/approvals',
+        roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
+      },
+      {
+        label: 'Leave records',
+        icon: CalendarRange,
+        to: '/leave/records',
+        roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
+      },
       { label: 'Org chart', icon: Network, to: '/organization/chart', roles: ROLES },
     ],
   },
@@ -62,6 +79,7 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ['hr_admin'],
         end: true,
       },
+      { label: 'Leave balances', icon: Scale, to: '/leave/balances', roles: ['hr_admin'] },
     ],
   },
   {

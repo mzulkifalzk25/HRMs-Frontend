@@ -267,6 +267,68 @@ Record (all endpoints below return this shape):
 
 Backend notes for the user's own implementation (not specified further here, D-080): one record per employee and date (unique), indexed on employee/date; corrections stored as an append-only audit table.
 
+### Leave and approvals (Phase 5)
+
+**The backend is authoritative** for routing, the workflow, balances, the ledger and every rule (D-027). Rules: D-060…D-069, D-088, D-089 (confirmed), D-090 (provisional), conventions D-091. Durations count Monday–Friday without public holidays, whole days only. A request may not exceed the remaining balance, may not overlap the requester's own pending or approved leave, and may be backdated (`backdated: true`). It must stay inside one leave year (calendar year, provisional).
+
+Request detail (`GET leave/requests/{id}/` and the response of every write):
+
+```json
+{
+  "id": "lr-41",
+  "employee_id": "e-101",
+  "employee_name": "Hamza Kareem",
+  "department_name": "Engineering",
+  "leave_type": "annual",
+  "start_date": "2026-12-02",
+  "end_date": "2026-12-04",
+  "requested_days": 3,
+  "reason": "Family trip planned in advance.",
+  "status": "under_review",
+  "backdated": false,
+  "attachment": { "name": "ticket.pdf", "size": 48213, "content_type": "application/pdf" },
+  "submitted_at": "2026-11-24T10:15:00.000+05:00",
+  "version": 1,
+  "routed_to": "managers",
+  "steps": [
+    { "id": "review", "kind": "review", "mode": "parallel", "completion": "all", "required": false, "assignee_ids": ["u-tl-001", "u-apm-001"] },
+    { "id": "decision", "kind": "decision", "mode": "parallel", "completion": "any", "required": true, "assignee_ids": ["u-mgr-001"] }
+  ],
+  "participants": [
+    { "employee_id": "u-mgr-001", "name": "Imran Demo", "kind": "decision_maker", "mandatory": false },
+    { "employee_id": "u-tl-001", "name": "Zainab Demo", "kind": "reviewer", "mandatory": false },
+    { "employee_id": "u-hr-001", "name": "Sana Demo", "kind": "recipient", "mandatory": true }
+  ],
+  "actions": [
+    { "id": "act-77", "step_id": "review", "actor_id": "u-tl-001", "actor_name": "Zainab Demo", "kind": "recommend_approve", "comment": "Coverage arranged with the team.", "at": "2026-11-25T11:30:00.000+05:00" }
+  ],
+  "allowed_actions": ["approve", "decline", "comment"]
+}
+```
+
+- `routed_to` ∈ `managers` (employee / Team Lead with active managers), `hr` (no manager, Manager, Senior PM, HR Administrator → another HR Administrator, Associate PM without a Senior PM), `senior_pm` (Associate PM). Nobody decides or reviews their own request.
+- `steps`: `kind` ∈ `review`, `decision`; `mode` ∈ `parallel`, `sequential`; `completion` ∈ `any`, `all` (parallel only; sequential means in order, each must approve). Default: optional review by the Team Lead and Associate PM, then a decision where **any one** selected manager decides.
+- `participants.kind` ∈ `decision_maker`, `reviewer`, `recipient`; HR Administrators are recipients with `mandatory: true` and cannot be removed.
+- `actions.kind` ∈ `approve`, `decline`, `recommend_approve`, `recommend_decline`, `comment`, `override_approve`, `override_decline`, `cancel`. `allowed_actions` are what the caller may do now; the UI shows exactly these.
+- `status` is derived: `pending` → `under_review` (recommendations/comments) → `pending_final_approval` (only with an `all` or sequential rule, partly approved) → `approved` / `declined` / `cancelled`.
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `GET leave/balances/?year=&employee=` | everyone; other employees HR only (`403`) | `[{ "leave_type", "allocated", "used", "remaining" }]` for the three types |
+| `GET leave/ledger/?year=&employee=` | same | Newest first: `{ "id", "employee_id", "leave_type", "year", "kind", "days", "reason", "actor_name", "at", "request_id" }`; `kind` ∈ `allocation`, `adjustment` (signed `days`), `deduction`, `reversal`. Append-only |
+| `POST leave/allocations/` | HR only | `{ "employee_id", "leave_type", "year", "days", "reason" }` → ledger entry. `400` on `days` (0, not whole, or below what is used) and `reason` (min. 5) |
+| `GET leave/route/?manager=…` | everyone | Preview for the caller: `{ "routed_to", "manager_choices": [{ "id", "name" }], "participants", "problem" }`. `manager` may repeat; omitted = all managers. `problem` is set when nobody could decide |
+| `GET leave/requests/me/` | everyone | Own requests (list shape: the detail without `version`, `routed_to`, `steps`, `participants`, `actions`, `allowed_actions`), newest first |
+| `POST leave/requests/` | everyone | **multipart**: `leave_type`, `start_date`, `end_date`, `requested_days`, `reason`, `manager_ids` (repeated; only when routed to managers), optional `attachment` (PDF/JPG/PNG ≤ 5 MB). `400` field errors on any of these (dates, no working days, mismatching duration, overlap on `start_date`, balance on `leave_type`, managers, attachment); `400` `no_approver` when nobody could decide |
+| `GET leave/requests/?page=&page_size=&status=&leave_type=&department=&employee=&from=&to=` | everyone except Employee (`403`) | DRF page of list items within scope (directory scope D-085, plus requests you take part in; HR all). `from`/`to` select requests overlapping the range |
+| `GET leave/requests/{id}/` | requester, participants, scope, HR | `404` otherwise |
+| `POST leave/requests/{id}/actions/` | per `allowed_actions` | `{ "action", "comment", "version" }`. `decline`, `override_*` and `comment` need a comment (min. 5). `409` `conflict` (stale version), `409` `already_decided`, `409` `insufficient_balance`; `403` when not allowed |
+| `POST leave/requests/{id}/cancel/` | requester | `{ "reason", "version" }`. Pending: always; approved: until the day before the start, days returned by a `reversal`. `409` `cannot_cancel` |
+| `GET leave/approvals/?tab=pending\|history` | everyone | List items plus `stage` ∈ `final_approval`, `recommendation`, `review`: pending = waiting for the caller's decision or recommendation (oldest first); history = requests the caller acted on |
+| `GET leave/summary/` | everyone (scoped) | `{ "pending", "approved_this_month", "on_leave_today" }` |
+
+Backend notes for the user's own implementation (D-080, D-069): decide, deduct and append the ledger in one transaction with `select_for_update` on the request and the balance; unique constraint on (`request`, `kind`) for deductions and reversals; the request status as a state machine; `version` as an optimistic-concurrency check; idempotency keys for submissions are recommended.
+
 ### Dashboards (P2-T12)
 
 Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
@@ -292,4 +354,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: leave and approvals (P5-T18), notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+Further endpoints are added per phase: notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.

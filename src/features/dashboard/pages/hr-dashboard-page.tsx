@@ -4,6 +4,7 @@ import { SectionCard } from '@/components/shared/section-card'
 import { StatCard } from '@/components/shared/stat-card'
 import type { DashboardService } from '../api/dashboard.service'
 import { useAttendanceSummary } from '@/features/attendance'
+import { useLeaveSummary } from '@/features/leave'
 import { useHrDashboard } from '../api/use-dashboards'
 import { AttendanceTrendChart } from '../components/attendance-trend-chart'
 import { DashboardHeader } from '../components/dashboard-header'
@@ -15,6 +16,7 @@ export function HrDashboardPage({ service }: { service?: DashboardService }) {
   const query = useHrDashboard(service)
   // Today's counts come from the attendance service (P4-T13); the rest from the dashboard service.
   const attendance = useAttendanceSummary()
+  const leave = useLeaveSummary().data
   const live = attendance.data
   return (
     <div className="space-y-6">
@@ -46,7 +48,7 @@ export function HrDashboardPage({ service }: { service?: DashboardService }) {
               />
               <StatCard
                 label="Pending leave requests"
-                value={data.metrics.pendingLeaveRequests}
+                value={leave?.pending ?? data.metrics.pendingLeaveRequests}
                 icon={CalendarClock}
                 tone="info"
               />

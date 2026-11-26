@@ -12,6 +12,7 @@ import type {
   EmployeePatch,
 } from '@/features/employees/schemas/employee.schema'
 import { EMPLOYEE_POLICY } from '@/features/employees/lib/employee-policy'
+import type { OrgContext, OrgPerson } from '@/features/leave/lib/routing'
 import { findReportingCycle, transitiveReports } from '@/features/organization/lib/hierarchy'
 import type {
   Department,
@@ -580,6 +581,34 @@ export function createHrStore() {
         status: e.status,
         joiningDate: e.joiningDate,
       }))
+    },
+
+    /** Organization as leave routing needs it (same data as the directory, D-089). */
+    leaveOrg(): {
+      people: Array<OrgPerson & { departmentId: string | null; departmentName: string | null }>
+      teams: OrgContext['teams']
+      projects: OrgContext['projects']
+    } {
+      return {
+        people: employees.map((e) => ({
+          id: e.id,
+          name: fullName(e),
+          role: e.role,
+          status: e.status,
+          managerIds: [...e.managerIds],
+          teamIds: [...e.teamIds],
+          projectIds: [...e.projectIds],
+          departmentId: e.departmentId,
+          departmentName: byId(departments, e.departmentId)?.name ?? null,
+        })),
+        teams: teams.map((t) => ({ id: t.id, teamLeadId: t.teamLeadId, status: t.status })),
+        projects: projects.map((p) => ({
+          id: p.id,
+          seniorPmId: p.seniorPmId,
+          associatePmId: p.associatePmId,
+          status: p.status,
+        })),
+      }
     },
 
     reset() {

@@ -23,6 +23,9 @@ import type { EmployeeService } from '@/features/employees/api/employee.service'
 import { createHttpOrganizationService } from '@/features/organization/api/organization.http'
 import { createMockOrganizationService } from '@/features/organization/api/organization.mock'
 import type { OrganizationService } from '@/features/organization/api/organization.service'
+import { createHttpApprovalService, createHttpLeaveService } from '@/features/leave/api/leave.http'
+import { createMockApprovalService, createMockLeaveService } from '@/features/leave/api/leave.mock'
+import type { ApprovalService, LeaveService } from '@/features/leave/api/leave.service'
 import { env } from '@/lib/env'
 import { apiClient, type HttpClient } from '@/services/api'
 import { createHttpHealthService } from '@/services/health/health.http'
@@ -50,6 +53,8 @@ export type Services = {
   employees: EmployeeService
   organization: OrganizationService
   attendance: AttendanceService
+  leave: LeaveService
+  approvals: ApprovalService
 }
 
 export function createServices(options: {
@@ -85,6 +90,8 @@ export function createServices(options: {
       employees: createMockEmployeeService({ latencyMs }),
       organization: createMockOrganizationService({ latencyMs }),
       attendance: createMockAttendanceService({ latencyMs }),
+      leave: createMockLeaveService({ latencyMs }),
+      approvals: createMockApprovalService({ latencyMs }),
     }
   }
   return {
@@ -96,6 +103,8 @@ export function createServices(options: {
     employees: createHttpEmployeeService(options.client),
     organization: createHttpOrganizationService(options.client),
     attendance: createHttpAttendanceService(options.client),
+    leave: createHttpLeaveService(options.client),
+    approvals: createHttpApprovalService(options.client),
   }
 }
 
