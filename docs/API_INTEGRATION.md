@@ -393,6 +393,21 @@ HR only. The backend reads `.xlsx`/`.xls` files (≤ 10 MB, ≤ 5,000 rows), val
 
 Matching: employees by email (update only with `update_existing`); attendance by employee code + date (always skipped if present); historical leave by overlap (skipped); balances always count as updates. Attendance times are Pakistan local time. Balances: "Imported opening balance" ledger adjustment; historical leave: approved request + deduction, no notifications. Backend: idempotent execute, audit entry per import.
 
+### Reports, settings and audit (Phase 8)
+
+Provisional rules: D-097. Shapes: `src/features/{reports,settings,audit}/schemas/*.ts` (snake_case on the wire).
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `GET reports/{attendance,leave,employees,departments}/?from=&to=&department=&team=&employee=` | HR (all), Manager/Team Lead/Senior PM/Associate PM (scope); Employee `403` | Computed server-side from classified records (Late-In from the attendance policy); leave days count Monday–Friday without holidays; `remaining` balances only for HR |
+| `GET settings/` | everyone | `{ company, default_allocation, approvals: { decision_rule, review_required }, holidays, updated_at, updated_by_name }` |
+| `PUT settings/company/`, `PUT settings/leave-allocation/`, `PUT settings/approvals/` | HR | `400` field errors; audited |
+| `POST settings/holidays/` `{ date, name }`, `DELETE settings/holidays/{id}/` | HR | One holiday per date; audited |
+| `GET audit/?page=&page_size=&actor=&action=&entity=&from=&to=&ordering=-at` | HR | Read-only, append-only entries `{ id, at, actor_id, actor_name, action, entity, entity_id, entity_label, reason, before, after }` |
+| `GET audit/actors/` | HR | For the actor filter |
+
+Backend notes: write audit rows in the same transaction as the change; no update/delete endpoints; retention per Q-AUD-01.
+
 ### Dashboards (P2-T12)
 
 Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
@@ -418,4 +433,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
