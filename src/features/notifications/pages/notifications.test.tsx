@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockAttendanceStore } from '@/services/mock/attendance-store'
 import { mockLeaveStore } from '@/services/mock/leave-store'
+import { setMockViewer } from '@/services/mock/mock-session'
 import { mockNotificationStore } from '@/services/mock/notification-store'
 import { renderApp } from '@/test/render'
 
@@ -19,6 +20,11 @@ beforeEach(() => freezeAt('08:00:00'))
 afterEach(() => {
   vi.useRealTimers()
 })
+
+/** Look at the mock backend as another person (the signed-in UI user is restored after). */
+function setViewer(id: string, role: 'employee' | 'hr_admin' = 'employee') {
+  setMockViewer({ id, role })
+}
 
 const list = () => screen.findByRole('list', { name: 'Notifications' }, { timeout: 4000 })
 
@@ -106,5 +112,51 @@ describe('announcements page (P6-T08)', () => {
     expect(
       screen.queryByRole('article', { name: 'Engineering town hall on Friday' }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('HR announcements (P6-T08, D-093)', () => {
+  it('HR publishes to a team after validation, the team is notified, and HR archives it', async () => {
+    await renderApp('/announcements', { signedInAs: 'hr_admin' })
+    await screen.findByRole('article', { name: 'Welcome to FormbaxHR' })
+    await userEvent.click(screen.getByRole('button', { name: 'New announcement' }))
+    const form = await screen.findByRole('dialog', { name: 'New announcement' })
+    await userEvent.selectOptions(within(form).getByLabelText('Audience'), 'Teams')
+    await userEvent.click(within(form).getByRole('button', { name: 'Publish' }))
+    expect(await within(form).findByText('Choose at least one team.')).toBeInTheDocument()
+    expect(within(form).getByText('Use 3 to 120 characters.')).toBeInTheDocument()
+
+    await userEvent.type(within(form).getByLabelText('Title'), 'Frontend demo day')
+    await userEvent.type(within(form).getByLabelText('Message'), 'Show your work on Thursday.')
+    await userEvent.click(await within(form).findByRole('checkbox', { name: 'Frontend' }))
+    await userEvent.click(within(form).getByRole('button', { name: 'Publish' }))
+    const card = await screen.findByRole('article', { name: 'Frontend demo day' })
+    expect(within(card).getByText('Teams: Frontend')).toBeInTheDocument()
+    expect(within(card).getByText(/shown until archived/)).toBeInTheDocument()
+
+    // Ali (Frontend team) is notified; Omar (Backend) is not.
+    const reach = (id: string) => {
+      setViewer(id)
+      return mockNotificationStore.list({ page: 1, pageSize: 50 }).results.map((n) => n.title)
+    }
+    expect(reach('u-emp-001')).toContain('Frontend demo day')
+    expect(reach('e-105')).not.toContain('Frontend demo day')
+    setViewer('u-hr-001', 'hr_admin')
+
+    await userEvent.click(within(card).getByRole('button', { name: 'Archive "Frontend demo day"' }))
+    const confirm = await screen.findByRole('alertdialog')
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Archive' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('article', { name: 'Frontend demo day' })).not.toBeInTheDocument(),
+    )
+    await userEvent.click(screen.getByLabelText('Show archived and expired'))
+    const archived = await screen.findByRole('article', { name: 'Frontend demo day' })
+    expect(within(archived).getByText('Archived')).toBeInTheDocument()
+  })
+
+  it('only HR can create announcements', async () => {
+    await renderApp('/announcements', { signedInAs: 'manager' })
+    await screen.findByRole('article', { name: 'Welcome to FormbaxHR' })
+    expect(screen.queryByRole('button', { name: 'New announcement' })).not.toBeInTheDocument()
   })
 })
