@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CalendarRange,
   ClipboardList,
+  FileUp,
   Clock,
   Bell,
   ListChecks,
@@ -83,6 +84,7 @@ export const NAV_SECTIONS: NavSection[] = [
         end: true,
       },
       { label: 'Leave balances', icon: Scale, to: '/leave/balances', roles: ['hr_admin'] },
+      { label: 'Imports', icon: FileUp, to: '/imports', roles: ['hr_admin'] },
     ],
   },
   {

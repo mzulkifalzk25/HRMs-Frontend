@@ -18,6 +18,7 @@ describe('navigationForRole', () => {
       'Announcements',
       'Organization',
       'Leave balances',
+      'Imports',
       'Notifications',
       'My profile',
     ],

@@ -120,6 +120,20 @@ const NOTIFICATION_PAGES = {
     (m) => m.AnnouncementsPage,
   ),
 }
+const IMPORT_PAGES = {
+  history: lazyPage(
+    () => import('@/features/imports/pages/imports-page'),
+    (m) => m.ImportsPage,
+  ),
+  wizard: lazyPage(
+    () => import('@/features/imports/pages/import-wizard-page'),
+    (m) => m.ImportWizardPage,
+  ),
+  detail: lazyPage(
+    () => import('@/features/imports/pages/import-detail-page'),
+    (m) => m.ImportDetailPage,
+  ),
+}
 const ORGANIZATION_PAGES = {
   manage: lazyPage(
     () => import('@/features/organization/pages/organization-page'),
@@ -208,6 +222,17 @@ function employeeAndOrganizationRoutes(): RouteObject[] {
       path: 'notifications',
       handle: crumb('Notifications'),
       children: [{ index: true, lazy: NOTIFICATION_PAGES.history }],
+    },
+    {
+      // Phase 7: imports are HR only (D-096).
+      path: 'imports',
+      handle: crumb('Imports'),
+      element: <RequireRole allow={['hr_admin']} />,
+      children: [
+        { index: true, lazy: IMPORT_PAGES.history },
+        { path: 'new', lazy: IMPORT_PAGES.wizard, handle: crumb('New import') },
+        { path: ':importId', lazy: IMPORT_PAGES.detail, handle: crumb('Import') },
+      ],
     },
     {
       path: 'organization',

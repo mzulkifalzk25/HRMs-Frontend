@@ -539,6 +539,81 @@ export function createLeaveStore(
   return {
     reset: seed,
 
+    // --- Imports (P7, D-096; mock backend only) ---------------------------------------------
+    hasOverlap(employeeId: string, startDate: string, endDate: string): boolean {
+      return requests.some(
+        (r) =>
+          r.employeeId === employeeId &&
+          (OPEN_STATUSES.has(statusOf(r)) || statusOf(r) === 'approved') &&
+          rangesOverlap({ start: r.startDate, end: r.endDate }, { start: startDate, end: endDate }),
+      )
+    },
+    balanceFor(employeeId: string, leaveType: LeaveType, year: number) {
+      return balanceOf(computeBalances(ledger, employeeId, year), leaveType)
+    },
+    /** Historical leave: an approved request with its deduction, no notifications. */
+    importHistory(input: {
+      employeeId: string
+      leaveType: LeaveType
+      startDate: string
+      endDate: string
+      reason: string
+      actorId: string
+    }) {
+      const person = personOf(input.employeeId)
+      if (!person) throw notFound()
+      const at = toAppIsoString(now())
+      const r: StoredRequest = {
+        id: nextId('lr'),
+        employeeId: input.employeeId,
+        employeeName: person.name,
+        departmentName: person.departmentName,
+        leaveType: input.leaveType,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        requestedDays: leaveDays(input.startDate, input.endDate),
+        reason: input.reason,
+        backdated: true,
+        attachment: null,
+        submittedAt: at,
+        version: 0,
+        routedTo: 'hr',
+        steps: [],
+        participants: [],
+        actions: [],
+      }
+      requests.push(r)
+      addAction(r, input.actorId, 'override_approve', 'Imported historical leave', at)
+      settle(r, 'pending', nameOf(input.actorId), at)
+      return r.id
+    },
+    /** Sets the allocation through an "Imported opening balance" adjustment. */
+    importBalance(input: {
+      employeeId: string
+      leaveType: LeaveType
+      year: number
+      allocated: number
+      actorId: string
+    }) {
+      const current = balanceOf(
+        computeBalances(ledger, input.employeeId, input.year),
+        input.leaveType,
+      )
+      const days = input.allocated - current.allocated
+      if (days === 0) return null
+      return ledgerEntry({
+        employeeId: input.employeeId,
+        leaveType: input.leaveType,
+        year: input.year,
+        kind: 'adjustment',
+        days,
+        reason: `Imported opening balance (${input.allocated} days)`,
+        actorName: nameOf(input.actorId),
+        at: toAppIsoString(now()),
+        requestId: null,
+      })
+    },
+
     /** Approved leave on a working day (for attendance summaries). */
     isOnLeave(employeeId: string, date: string): boolean {
       return (

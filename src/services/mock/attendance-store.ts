@@ -151,6 +151,31 @@ export function createAttendanceStore(
   return {
     reset: seed,
 
+    /** Historical attendance import (P7, mock backend only). */
+    hasRecord(employeeId: string, date: string): boolean {
+      return records.has(`att-${employeeId}-${date}`)
+    },
+    importDay(input: {
+      employeeId: string
+      date: string
+      checkIn: string
+      checkOut: string | null
+    }) {
+      const person = personOf(input.employeeId)
+      if (!person) throw err(404, 'not_found', 'Employee not found.')
+      if (records.has(`att-${input.employeeId}-${input.date}`))
+        throw err(409, 'duplicate', 'An attendance record already exists for this day.')
+      const at = (time: string) => toAppIsoString(appWallClockToInstant(input.date, time))
+      const record = build(
+        person,
+        input.date,
+        at(input.checkIn),
+        input.checkOut ? at(input.checkOut) : null,
+      )
+      records.set(record.id, record)
+      return record
+    },
+
     /** Reminders due now for one person (D-093), delivered by the notification backend. */
     remindersFor(employeeId: string): DueReminder[] {
       const person = personOf(employeeId)

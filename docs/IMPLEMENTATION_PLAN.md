@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1–6 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance, leave and approvals, notifications and announcements. 606 tests; all checks pass. |
-| Current phase | Phase 6 complete (PR into `dev-main` open); Phase 7 next after the user merges. |
-| Current task | User review and merge of the Phase 6 PR; manual browser checks pending |
-| Next task | Phase 7 — P7-T01 (Excel imports). Still provisional: Q-LEAVE-01…03, Q-APPR-07 (D-090), Q-ATT-01…07 (D-086), Q-ORG-01…05 (D-084) |
-| Branch | `phase-6-notifications` (from `dev-main` @ `691a2f3`, published; PR into `dev-main`). Phases 1–5 merged into `dev-main` (PRs #1–#5). |
+| Overall state | Phases 1–7 implemented in mock mode (Phase 7 Excel imports uncommitted, awaiting approval). 628 tests; all checks pass. |
+| Current phase | Phase 7 complete, uncommitted; Phase 8 (reports, settings, audit) next. |
+| Current task | User approval to commit and push Phase 7 (D-095) |
+| Next task | Phase 8 — reports, settings, audit (feature-first, D-095) |
+| Branch | `phase-7-imports` (from `dev-main` @ `eaebe82`, published, no commits yet). Phases 1–6 merged (PRs #1–#6). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 6 committed and pushed in small commits (see `git log`). Verify with `git status`. |
+| Working tree | Phase 7 changes uncommitted. Verify with `git status`. |
 | Mock mode | Implemented: all services run on in-memory mocks (`VITE_USE_MOCK_API=true`), "Mock data" badge in the top bar |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -489,24 +489,24 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Safe import UX for employees, historical attendance, historical leave and leave balances, with preview, mapping, validation, duplicate detection, dry run, row errors, execution and history. Real processing is done by Django.
 **Dependencies:** Phases 3, 4, 5.
-**Status:** Not started.
+**Status:** Complete (2026-11-26) on `phase-7-imports`, provisional rules D-096. Not committed yet (awaiting approval, D-095). Not visually checked in a browser.
 **Open items:** Q-IMP-01 (client vs server preview), Q-IMP-02 (duplicate/overwrite policy details), Q-IMP-03 (templates and required columns), Q-IMP-04 (size limits), Q-IMP-05 (historical data effect on ledger/balances).
 
 ### Tasks and subtasks
 
-- [ ] **P7-T01** Types/schemas: `ImportJob`, `ImportType`, `ColumnMapping`, `RowValidationResult`, `ImportError`, `ImportSummary`.
-- [ ] **P7-T02** `ImportService` (mock/HTTP): create job (upload), get preview, submit mapping, dry run, execute, list history, get job, download error report.
-- [ ] **P7-T03** Upload step: `.xlsx` and `.xls` only; size/type validation for UX; clear rejection messages; untrusted-file handling documented.
-- [ ] **P7-T04** Preview step: show first N rows and detected columns. Parsing location **BLOCKED by Q-IMP-01** (client parse library vs server preview). Build the UI against the service contract so either approach fits.
-- [ ] **P7-T05** Column mapping UI: map spreadsheet columns to system fields, required-field indicators, saved mapping suggestions (local only).
-- [ ] **P7-T06** Validation results: row-level errors and warnings grouped by type; filter to errors only.
-- [ ] **P7-T07** Duplicate detection display (by configurable keys). **Never silently overwrite** existing data; any overwrite requires explicit per-import user choice (policy details **BLOCKED by Q-IMP-02**).
-- [ ] **P7-T08** Dry run: shows what would be created/updated/skipped with no persistence; required before execution.
-- [ ] **P7-T09** Execution: confirmation dialog summarizing counts; progress and result states; partial-failure handling displayed per row.
-- [ ] **P7-T10** Import history list and detail.
-- [ ] **P7-T11** Error report download (CSV/XLSX; format recorded in DECISIONS) with formula-injection neutralization.
-- [ ] **P7-T12** Per-import-type specifics: employees; historical attendance (Karachi timezone interpretation of timestamps stated explicitly in UI); historical leave; leave balances (effect on ledger **BLOCKED by Q-IMP-05**).
-- [ ] **P7-T13** Update API docs and backend notes: background processing only if justified (Celery decision), transactional per-job behavior, idempotency, audit entries for imports.
+- [x] **P7-T01** Types/schemas: `ImportJob`, `ImportType`, `ColumnMapping`, `RowValidationResult`, `ImportError`, `ImportSummary`. (`features/imports/schemas`, `lib/import-definitions.ts`)
+- [x] **P7-T02** `ImportService` (mock/HTTP): create job (upload), get preview, submit mapping, dry run, execute, list history, get job, download error report. (mock `services/mock/import-store.ts`; error report built client-side from row results)
+- [x] **P7-T03** Upload step: `.xlsx` and `.xls` only; size/type validation for UX; clear rejection messages; untrusted-file handling documented. (10 MB, `.xlsx`/`.xls`, D-096)
+- [x] **P7-T04** Preview step: show first N rows and detected columns. Parsing location **BLOCKED by Q-IMP-01** (client parse library vs server preview). Build the UI against the service contract so either approach fits. (server-side parsing provisional, D-096; mock shows labelled sample rows)
+- [x] **P7-T05** Column mapping UI: map spreadsheet columns to system fields, required-field indicators, saved mapping suggestions (local only). (suggested mapping by header/aliases; saved suggestions not built)
+- [x] **P7-T06** Validation results: row-level errors and warnings grouped by type; filter to errors only.
+- [x] **P7-T07** Duplicate detection display (by configurable keys). **Never silently overwrite** existing data; any overwrite requires explicit per-import user choice (policy details **BLOCKED by Q-IMP-02**). (skip by default; explicit "update existing records" per import, D-096)
+- [x] **P7-T08** Dry run: shows what would be created/updated/skipped with no persistence; required before execution.
+- [x] **P7-T09** Execution: confirmation dialog summarizing counts; progress and result states; partial-failure handling displayed per row.
+- [x] **P7-T10** Import history list and detail.
+- [x] **P7-T11** Error report download (CSV/XLSX; format recorded in DECISIONS) with formula-injection neutralization. (CSV)
+- [x] **P7-T12** Per-import-type specifics: employees; historical attendance (Karachi timezone interpretation of timestamps stated explicitly in UI); historical leave; leave balances (effect on ledger **BLOCKED by Q-IMP-05**). (balances and history through the ledger, D-096)
+- [x] **P7-T13** Update API docs and backend notes: background processing only if justified (Celery decision), transactional per-job behavior, idempotency, audit entries for imports. (§6 Imports)
 
 ### Required tests
 - File type/size rejection; `.xls` and `.xlsx` accepted.
@@ -520,7 +520,6 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 - Full flow upload → preview → mapping → validate → dry run → execute → history works in mock mode.
 - No silent overwrite path exists.
 - UI states that authoritative processing is done by the backend.
-
 ### Deliverables
 - Imports feature, error report downloads, updated docs.
 
@@ -780,6 +779,7 @@ Record real command outputs only. Never invent results.
 | 2026-11-26 | Notable test findings during Phase 6 | Menu test: Radix hides the page while a menu is open and the computed accessible name drops the space before sr-only text (tests adjusted); a weak `toContain(expect.stringMatching)` assertion and a conditional early return replaced by real assertions; label association fixed for an a11y lint warning | P6 |
 | 2026-11-26 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 6) | All exit 0; 48 files / 606 tests; 3 × 606 in timezone runs. Main chunk 470.79 kB / 147.45 kB gzip (under 500 kB); notification pages own chunks (6.0 kB, 6.5 kB) | P6 acceptance |
 | 2026-11-26 | Dev server `curl` of `/notifications`, `/announcements` and notification modules | All 200; no errors; server stopped. Not a visual check | P6 |
+| 2026-11-26 | Phase 7: typecheck, lint, format check, focused tests (imports lib/store/pages 33), whole suite once, `build` | All pass; 51 files / 628 tests; main chunk 472.17 kB | P7 (feature-first verification, D-095) |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -803,3 +803,14 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | Phase 4 implemented and verified: pure Karachi attendance policy, mock attendance backend, check-in/out card, history, calendar, team/org records with filters, HR corrections with reason and audit history, CSV export, live dashboards; tests found a query-pausing test-isolation bug (fixed) | P4-T01…T14 | Q-ATT-01…07 provisional (D-086); manual browser checks pending | Phase 5 after PR merge |
 | 2026-11-25 | Phase 5 implemented and verified: user answered the leave/approval questions (D-088, D-089); pure duration, balance, routing and workflow modules; mock leave backend with concurrency, idempotency and an append-only ledger; balances, application, request page, approvals inbox, leave records, HR balances; live dashboards | P5-T01…T18 | Q-LEAVE-01…03, Q-APPR-07 provisional (D-090); manual browser checks pending | Phase 6 after PR merge |
 | 2026-11-26 | Phase 6 implemented and verified in small commits: user answered the notification questions (D-093); pure recipient/text/reminder/announcement rules; mock notification backend fed by leave events and attendance reminders; notification center, history with filters and preferences, announcements with HR publishing and archiving; live dashboard notifications | P6-T01…T10 | None new; manual browser checks pending | Phase 7 after PR merge |
+| 2026-11-26 | Feature-first strategy adopted (D-095); Phase 7 Excel imports built with provisional rules (D-096) | P7-T01…T13 | Q-IMP-01…05 provisional | Commit approval, then Phase 8 |
+
+## H. DEFERRED WORK (D-095, after all main features)
+
+Kept, not deleted; picked up once Phases 7–8 are complete:
+- Exhaustive unit/component coverage and end-to-end suites (P9).
+- Detailed accessibility audit, responsive refinements, UI polish and micro-interactions.
+- Bundle and performance optimization (R-022, P9-T06), including loading mock modules only in mock mode.
+- Backend specification and full API documentation (P9-T12, P9-T13).
+- Manual browser checks of every phase (pending since Phase 1).
+- Deployment configuration and real backend integration.

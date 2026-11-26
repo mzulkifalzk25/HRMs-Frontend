@@ -380,6 +380,19 @@ An announcement is shown through its `expires_on` date (inclusive), or until arc
 
 Backend notes for the user's own implementation (D-080): create notifications in the same transaction as the event (or from a reliable outbox); reminders from a scheduled job (for example Celery beat) at 9:15 AM and 9:00 AM Pakistan time, idempotent per person and date; index notifications on (`recipient`, `read`, `created_at`).
 
+### Imports (Phase 7)
+
+HR only. The backend reads `.xlsx`/`.xls` files (≤ 10 MB, ≤ 5,000 rows), validates every row against current data and runs one transaction per job (D-096). Job: `{ "id", "type", "file_name", "file_size", "status", "created_at", "created_by_name", "columns", "preview_rows", "total_rows", "sample_data", "mapping", "update_existing", "summary": { "create", "update", "skip", "error" } | null, "executed_at" }`; `type` ∈ `employees`, `attendance`, `leave_history`, `leave_balances`; `status` ∈ `uploaded`, `validated`, `completed`, `failed`. Row result: `{ "row", "action": "create" | "update" | "skip" | "error", "key", "messages", "changes": { "Field": ["before", "after"] } | null }`. Field keys per type: `src/features/imports/lib/import-definitions.ts`.
+
+| Method and path | Notes |
+|---|---|
+| `POST imports/` | multipart `type`, `file`; `400` on `file` |
+| `GET imports/`, `GET imports/{id}/`, `GET imports/{id}/rows/` | history (newest first), job, last row results |
+| `POST imports/{id}/dry-run/` | `{ "mapping": { field: column \| null }, "update_existing": bool }` → `{ "job", "rows" }`; changes nothing; `400` per field on mapping problems |
+| `POST imports/{id}/execute/` | → `{ "job", "rows" }`; `409` `dry_run_required`, `409` `already_executed`; re-validates, rows that fail become `error` |
+
+Matching: employees by email (update only with `update_existing`); attendance by employee code + date (always skipped if present); historical leave by overlap (skipped); balances always count as updates. Attendance times are Pakistan local time. Balances: "Imported opening balance" ledger adjustment; historical leave: approved request + deduction, no notifications. Backend: idempotent execute, audit entry per import.
+
 ### Dashboards (P2-T12)
 
 Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
@@ -405,4 +418,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+Further endpoints are added per phase: reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
