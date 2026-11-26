@@ -7,6 +7,7 @@ import { afterEach } from 'vitest'
 import { clearAccessToken } from '@/services/auth/access-token'
 import { mockAttendanceStore } from '@/services/mock/attendance-store'
 import { mockHrStore } from '@/services/mock/hr-store'
+import { mockImportStore } from '@/services/mock/import-store'
 import { mockLeaveStore } from '@/services/mock/leave-store'
 import { mockNotificationStore } from '@/services/mock/notification-store'
 import { setMockViewer } from '@/services/mock/mock-session'
@@ -27,6 +28,7 @@ afterEach(() => {
   clearAccessToken() // never let one test's session leak into the next
   setMockViewer(null)
   mockHrStore.reset()
+  mockImportStore.reset()
   mockNotificationStore.reset() // before the leave store: its seed emits notifications
   mockLeaveStore.reset()
   mockAttendanceStore.reset()
