@@ -134,6 +134,20 @@ const IMPORT_PAGES = {
     (m) => m.ImportDetailPage,
   ),
 }
+const ADMIN_PAGES = {
+  reports: lazyPage(
+    () => import('@/features/reports/pages/reports-page'),
+    (m) => m.ReportsPage,
+  ),
+  settings: lazyPage(
+    () => import('@/features/settings/pages/settings-page'),
+    (m) => m.SettingsPage,
+  ),
+  audit: lazyPage(
+    () => import('@/features/audit/pages/audit-page'),
+    (m) => m.AuditPage,
+  ),
+}
 const ORGANIZATION_PAGES = {
   manage: lazyPage(
     () => import('@/features/organization/pages/organization-page'),
@@ -222,6 +236,18 @@ function employeeAndOrganizationRoutes(): RouteObject[] {
       path: 'notifications',
       handle: crumb('Notifications'),
       children: [{ index: true, lazy: NOTIFICATION_PAGES.history }],
+    },
+    {
+      // Phase 8: reports for roles with a scope; settings and audit for HR (UX only, D-027).
+      element: <RequireRole allow={DIRECTORY_ROLES} />,
+      children: [{ path: 'reports', lazy: ADMIN_PAGES.reports, handle: crumb('Reports') }],
+    },
+    {
+      element: <RequireRole allow={['hr_admin']} />,
+      children: [
+        { path: 'settings', lazy: ADMIN_PAGES.settings, handle: crumb('Settings') },
+        { path: 'audit', lazy: ADMIN_PAGES.audit, handle: crumb('Audit log') },
+      ],
     },
     {
       // Phase 7: imports are HR only (D-096).

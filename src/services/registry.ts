@@ -41,6 +41,15 @@ import type {
 import { createHttpImportService } from '@/features/imports/api/import.http'
 import { createMockImportService } from '@/features/imports/api/import.mock'
 import type { ImportService } from '@/features/imports/api/import.service'
+import { createHttpAuditService } from '@/features/audit/api/audit.http'
+import { createMockAuditService } from '@/features/audit/api/audit.mock'
+import type { AuditService } from '@/features/audit/api/audit.service'
+import { createHttpReportService } from '@/features/reports/api/report.http'
+import { createMockReportService } from '@/features/reports/api/report.mock'
+import type { ReportService } from '@/features/reports/api/report.service'
+import { createHttpSettingsService } from '@/features/settings/api/settings.http'
+import { createMockSettingsService } from '@/features/settings/api/settings.mock'
+import type { SettingsService } from '@/features/settings/api/settings.service'
 import { env } from '@/lib/env'
 import { apiClient, type HttpClient } from '@/services/api'
 import { createHttpHealthService } from '@/services/health/health.http'
@@ -73,6 +82,9 @@ export type Services = {
   notifications: NotificationService
   announcements: AnnouncementService
   imports: ImportService
+  settings: SettingsService
+  audit: AuditService
+  reports: ReportService
 }
 
 export function createServices(options: {
@@ -113,6 +125,9 @@ export function createServices(options: {
       notifications: createMockNotificationService({ latencyMs }),
       announcements: createMockAnnouncementService({ latencyMs }),
       imports: createMockImportService({ latencyMs }),
+      settings: createMockSettingsService({ latencyMs }),
+      audit: createMockAuditService({ latencyMs }),
+      reports: createMockReportService({ latencyMs }),
     }
   }
   return {
@@ -129,6 +144,9 @@ export function createServices(options: {
     notifications: createHttpNotificationService(options.client),
     announcements: createHttpAnnouncementService(options.client),
     imports: createHttpImportService(options.client),
+    settings: createHttpSettingsService(options.client),
+    audit: createHttpAuditService(options.client),
+    reports: createHttpReportService(options.client),
   }
 }
 

@@ -56,7 +56,9 @@ import type { Page } from '@/types/api'
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES, ANNUAL_LEAVE_ALLOWANCE, type LeaveType } from '@/types/hr'
 import { mockHrStore, type HrStore } from './hr-store'
 import { getMockViewer } from './mock-session'
+import { mockAuditStore } from './audit-store'
 import { mockNotificationStore, type NotificationStore } from './notification-store'
+import { mockSettingsStore } from './settings-store'
 
 type Attachment = LeaveRequest['attachment']
 
@@ -133,6 +135,8 @@ export function createLeaveStore(
   let requests: StoredRequest[] = []
   let ledger: LedgerEntry[] = []
   let counter = 0
+  /** True while seeding: seed data is not audited (it never happened in this session). */
+  let seeding = false
 
   const todayKey = () => appDateKey(now())
   const nextId = (prefix: string) => `${prefix}-${(counter += 1)}`
@@ -171,15 +175,17 @@ export function createLeaveStore(
         kind: 'review',
         mode: 'parallel',
         completion: 'all',
-        required: false, // optional reviewers never block (D-089)
+        required: mockSettingsStore.peek().approvals.reviewRequired, // optional by default (D-089)
         assigneeIds: route.reviewerIds,
       })
     }
+    // Several managers: any one decides by default (D-089); HR may choose another rule (D-067).
+    const rule = mockSettingsStore.peek().approvals.decisionRule
     steps.push({
       id: 'decision',
       kind: 'decision',
-      mode: 'parallel',
-      completion: 'any', // any one decides (D-089)
+      mode: rule === 'sequential' ? 'sequential' : 'parallel',
+      completion: rule === 'any' ? 'any' : 'all',
       required: true,
       assigneeIds: route.deciderIds,
     })
@@ -187,6 +193,35 @@ export function createLeaveStore(
   }
 
   const statusOf = (r: StoredRequest) => deriveStatus(r.steps, r.actions)
+
+  const balancesOf = (employeeId: string, year: number) => {
+    ensureAllocated(employeeId, year)
+    return computeBalances(ledger, employeeId, year)
+  }
+
+  /** First allocation for people without one this year, from the HR default (D-062). */
+  function ensureAllocated(employeeId: string, year: number) {
+    const person = personOf(employeeId)
+    if (person?.status !== 'active') return
+    if (
+      ledger.some((e) => e.employeeId === employeeId && e.year === year && e.kind === 'allocation')
+    )
+      return
+    const defaults = mockSettingsStore.peek().defaultAllocation
+    for (const leaveType of LEAVE_TYPES) {
+      ledgerEntry({
+        employeeId,
+        leaveType,
+        year,
+        kind: 'allocation',
+        days: defaults[leaveType],
+        reason: `Annual allocation ${year}`,
+        actorName: 'System',
+        at: toAppIsoString(now()),
+        requestId: null,
+      })
+    }
+  }
 
   function scopeCheck(v: MockViewer) {
     const scope = v.role === 'employee' ? new Set<string>() : hr.visibleEmployeeIds()
@@ -238,6 +273,22 @@ export function createLeaveStore(
   function ledgerEntry(entry: Omit<LedgerEntry, 'id'>): LedgerEntry {
     const created = { id: nextId('led'), ...entry }
     ledger.push(created)
+    const viewer = getMockViewer()
+    if (!seeding && viewer && entry.kind !== 'allocation') {
+      const person = personOf(entry.employeeId)
+      const sign = entry.kind === 'deduction' ? -entry.days : entry.days
+      mockAuditStore.record({
+        actorId: viewer.id,
+        actorName: entry.actorName,
+        action: 'adjusted',
+        entity: 'leave_balance',
+        entityId: created.id,
+        entityLabel: `${person?.name ?? entry.employeeId}, ${LEAVE_TYPE_LABELS[entry.leaveType]} ${entry.year}`,
+        reason: entry.reason,
+        before: null,
+        after: { Change: `${sign > 0 ? '+' : ''}${sign} days`, Kind: entry.kind },
+      })
+    }
     return created
   }
 
@@ -332,6 +383,18 @@ export function createLeaveStore(
   ) {
     const after = statusOf(r)
     if (before === after || (after !== 'approved' && after !== 'declined')) return
+    if (!seeding)
+      mockAuditStore.record({
+        actorId,
+        actorName: nameOf(actorId),
+        action: after,
+        entity: 'leave_request',
+        entityId: r.id,
+        entityLabel: `${r.employeeName}, ${LEAVE_TYPE_LABELS[r.leaveType]} ${r.startDate} to ${r.endDate}`,
+        reason: comment,
+        before: { Status: before },
+        after: { Status: after },
+      })
     emit(after === 'approved' ? 'approved' : 'declined', r, actorId, at, { comment })
   }
 
@@ -416,6 +479,7 @@ export function createLeaveStore(
   }
 
   function seed() {
+    seeding = true
     requests = []
     ledger = []
     counter = 0
@@ -474,6 +538,7 @@ export function createLeaveStore(
       settle(request, before, nameOf(actorId), actionAt)
       emitDecision(request, before, actorId, actionAt, note ?? null)
     }
+    seeding = false
   }
   seed()
 
@@ -499,8 +564,9 @@ export function createLeaveStore(
       else if (leaveYearOf(input.startDate) !== leaveYearOf(input.endDate))
         set('endDate', 'A request must stay within one leave year. Split it into two requests.')
       else {
-        days = leaveDays(input.startDate, input.endDate)
-        if (days === 0) set('endDate', 'These dates contain no working days (Monday to Friday).')
+        days = leaveDays(input.startDate, input.endDate, mockSettingsStore.holidaySet())
+        if (days === 0)
+          set('endDate', 'These dates contain no working days (Monday to Friday, not a holiday).')
         else if (input.requestedDays !== days)
           set('requestedDays', `The duration does not match the dates (${days} working days).`)
       }
@@ -523,10 +589,7 @@ export function createLeaveStore(
       )
       if (clash && !LEAVE_POLICY.allowOverlap)
         set('startDate', `You already have leave from ${clash.startDate} to ${clash.endDate}.`)
-      const balance = balanceOf(
-        computeBalances(ledger, v.id, leaveYearOf(input.startDate)),
-        input.leaveType,
-      )
+      const balance = balanceOf(balancesOf(v.id, leaveYearOf(input.startDate)), input.leaveType)
       if (days > balance.remaining && !LEAVE_POLICY.allowNegativeBalance)
         set(
           'leaveType',
@@ -549,7 +612,7 @@ export function createLeaveStore(
       )
     },
     balanceFor(employeeId: string, leaveType: LeaveType, year: number) {
-      return balanceOf(computeBalances(ledger, employeeId, year), leaveType)
+      return balanceOf(balancesOf(employeeId, year), leaveType)
     },
     /** Historical leave: an approved request with its deduction, no notifications. */
     importHistory(input: {
@@ -595,10 +658,7 @@ export function createLeaveStore(
       allocated: number
       actorId: string
     }) {
-      const current = balanceOf(
-        computeBalances(ledger, input.employeeId, input.year),
-        input.leaveType,
-      )
+      const current = balanceOf(balancesOf(input.employeeId, input.year), input.leaveType)
       const days = input.allocated - current.allocated
       if (days === 0) return null
       return ledgerEntry({
@@ -633,7 +693,7 @@ export function createLeaveStore(
       const target = employeeId ?? v.id
       if (target !== v.id && v.role !== 'hr_admin') throw forbidden()
       if (!personOf(target)) throw notFound()
-      return computeBalances(ledger, target, year)
+      return balancesOf(target, year)
     },
 
     ledger({ employeeId, year }: { employeeId?: string; year: number }): LedgerEntry[] {
@@ -641,6 +701,7 @@ export function createLeaveStore(
       const target = employeeId ?? v.id
       if (target !== v.id && v.role !== 'hr_admin') throw forbidden()
       if (!personOf(target)) throw notFound()
+      ensureAllocated(target, year)
       return ledger
         .filter((e) => e.employeeId === target && e.year === year)
         .map((e) => ({ ...e }))
@@ -657,10 +718,7 @@ export function createLeaveStore(
         errors.days = ['Enter a whole number of days other than 0.']
       if (input.reason.trim().length < LEAVE_POLICY.reasonMinLength)
         errors.reason = [`Give a reason (at least ${LEAVE_POLICY.reasonMinLength} characters).`]
-      const current = balanceOf(
-        computeBalances(ledger, input.employeeId, input.year),
-        input.leaveType,
-      )
+      const current = balanceOf(balancesOf(input.employeeId, input.year), input.leaveType)
       if (!errors.days && current.allocated + input.days < current.used)
         errors.days = [`This would leave fewer days than already used (${current.used}).`]
       if (Object.keys(errors).length > 0) throw invalid(errors)
@@ -807,10 +865,7 @@ export function createLeaveStore(
       ])
       const wouldApprove = projected.outcome === 'approved' && before !== 'approved'
       if (wouldApprove) {
-        const balance = balanceOf(
-          computeBalances(ledger, r.employeeId, leaveYearOf(r.startDate)),
-          r.leaveType,
-        )
+        const balance = balanceOf(balancesOf(r.employeeId, leaveYearOf(r.startDate)), r.leaveType)
         if (balance.remaining < r.requestedDays)
           throw err(
             409,
@@ -842,6 +897,17 @@ export function createLeaveStore(
       addAction(r, v.id, 'cancel', input.reason?.trim() || null, nowIso)
       settle(r, before, nameOf(v.id), nowIso)
       emit('cancelled', r, v.id, nowIso, { wasPending: before !== 'approved' })
+      mockAuditStore.record({
+        actorId: v.id,
+        actorName: nameOf(v.id),
+        action: 'cancelled',
+        entity: 'leave_request',
+        entityId: r.id,
+        entityLabel: `${r.employeeName}, ${LEAVE_TYPE_LABELS[r.leaveType]} ${r.startDate} to ${r.endDate}`,
+        reason: input.reason?.trim() || null,
+        before: { Status: before },
+        after: { Status: 'cancelled' },
+      })
       return toDetail(r, v)
     },
 

@@ -6,10 +6,12 @@ import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { clearAccessToken } from '@/services/auth/access-token'
 import { mockAttendanceStore } from '@/services/mock/attendance-store'
+import { mockAuditStore } from '@/services/mock/audit-store'
 import { mockHrStore } from '@/services/mock/hr-store'
 import { mockImportStore } from '@/services/mock/import-store'
 import { mockLeaveStore } from '@/services/mock/leave-store'
 import { mockNotificationStore } from '@/services/mock/notification-store'
+import { mockSettingsStore } from '@/services/mock/settings-store'
 import { setMockViewer } from '@/services/mock/mock-session'
 
 // jsdom lacks ResizeObserver, which Radix popper-based components (tooltip, dropdown) use
@@ -28,9 +30,11 @@ afterEach(() => {
   clearAccessToken() // never let one test's session leak into the next
   setMockViewer(null)
   mockHrStore.reset()
+  mockSettingsStore.reset()
   mockImportStore.reset()
   mockNotificationStore.reset() // before the leave store: its seed emits notifications
   mockLeaveStore.reset()
   mockAttendanceStore.reset()
+  mockAuditStore.reset() // clears entries written during the test
   onlineManager.setOnline(true) // an 'offline' event in one test would pause every later query
 })

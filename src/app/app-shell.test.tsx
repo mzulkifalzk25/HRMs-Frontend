@@ -38,6 +38,7 @@ describe('app shell (signed in)', () => {
       'My leave',
       'Approvals',
       'Leave records',
+      'Reports',
       'Org chart',
       'Announcements',
       'Notifications',

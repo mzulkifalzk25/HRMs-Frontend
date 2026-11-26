@@ -28,6 +28,7 @@ import type {
 } from '@/features/organization/schemas/organization.schema'
 import { ApiError } from '@/services/api'
 import type { Page } from '@/types/api'
+import { mockAuditStore } from './audit-store'
 import { getMockViewer, type MockViewer } from './mock-session'
 
 type StoredEmployee = Employee & { hasActivated: boolean }
@@ -556,6 +557,46 @@ export function createHrStore() {
     }
   }
 
+  /** Display values of the audited employee fields (P8-T18). */
+  function describe(e: StoredEmployee): Record<string, string> {
+    return {
+      Name: fullName(e),
+      Email: e.email,
+      Phone: e.phone ?? '',
+      Role: e.role,
+      Department: byId(departments, e.departmentId)?.name ?? '',
+      Designation: byId(designations, e.designationId)?.title ?? '',
+      'Joining date': e.joiningDate,
+      Managers: e.managerIds
+        .map((id) => (byId(employees, id) ? fullName(byId(employees, id) as StoredEmployee) : id))
+        .join(', '),
+      Teams: e.teamIds.map((id) => byId(teams, id)?.name ?? id).join(', '),
+    }
+  }
+
+  function audit(
+    e: StoredEmployee,
+    action: 'created' | 'updated' | 'activated' | 'deactivated',
+    before: Record<string, string> | null,
+    after: Record<string, string> | null,
+    reason: string | null = null,
+  ) {
+    const viewer = getMockViewer()
+    if (!viewer) return
+    const actor = byId(employees, viewer.id)
+    mockAuditStore.record({
+      actorId: viewer.id,
+      actorName: actor ? fullName(actor) : viewer.id,
+      action,
+      entity: 'employee',
+      entityId: e.id,
+      entityLabel: `${fullName(e)} (${e.employeeCode ?? 'no code'})`,
+      before,
+      after,
+      reason,
+    })
+  }
+
   return {
     // Shared with the attendance mock (same people, same scope rules as the directory).
     /** Ids the signed-in viewer may see (null = everyone). Throws 401 when signed out. */
@@ -718,6 +759,7 @@ export function createHrStore() {
         hasActivated: false,
       }
       employees.push(created)
+      audit(created, 'created', null, describe(created))
       return toEmployee(created)
     },
 
@@ -747,7 +789,17 @@ export function createHrStore() {
         projectIds: patch.projectIds ?? current.projectIds,
       }
       validateEmployee(next, id)
+      const before = describe(current)
       Object.assign(current, next)
+      const after = describe(current)
+      const keys = Object.keys(after).filter((k) => before[k] !== after[k])
+      if (keys.length > 0)
+        audit(
+          current,
+          'updated',
+          Object.fromEntries(keys.map((k) => [k, before[k] ?? ''])),
+          Object.fromEntries(keys.map((k) => [k, after[k] ?? ''])),
+        )
       return toEmployee(current)
     },
 
@@ -770,6 +822,13 @@ export function createHrStore() {
         current.status = current.hasActivated ? 'active' : 'invited'
         current.deactivationReason = null
       }
+      audit(
+        current,
+        active ? 'activated' : 'deactivated',
+        null,
+        { Status: current.status },
+        reason?.trim() || null,
+      )
       return toEmployee(current)
     },
 
