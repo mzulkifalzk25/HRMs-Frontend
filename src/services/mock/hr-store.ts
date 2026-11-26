@@ -583,6 +583,17 @@ export function createHrStore() {
       }))
     },
 
+    /** Department and team names for labels (no viewer needed; names are not private). */
+    orgUnits(): {
+      departments: Array<{ id: string; name: string; status: RecordStatus }>
+      teams: Array<{ id: string; name: string; status: RecordStatus }>
+    } {
+      return {
+        departments: departments.map((d) => ({ id: d.id, name: d.name, status: d.status })),
+        teams: teams.map((t) => ({ id: t.id, name: t.name, status: t.status })),
+      }
+    },
+
     /** Organization as leave routing needs it (same data as the directory, D-089). */
     leaveOrg(): {
       people: Array<OrgPerson & { departmentId: string | null; departmentName: string | null }>
