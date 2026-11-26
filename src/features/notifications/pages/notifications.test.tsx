@@ -90,3 +90,21 @@ describe('preferences (D-093)', () => {
     ).toBeNull()
   })
 })
+
+describe('announcements page (P6-T08)', () => {
+  it('shows the announcements that reach you, with audience and expiry', async () => {
+    await renderApp('/announcements', { signedInAs: 'employee' })
+    const townHall = await screen.findByRole('article', { name: 'Engineering town hall on Friday' })
+    expect(within(townHall).getByText('Departments: Engineering')).toBeInTheDocument()
+    expect(within(townHall).getByText(/shown until 2 Dec 2026/)).toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Welcome to FormbaxHR' })).toBeInTheDocument()
+  })
+
+  it('people outside the audience do not see it', async () => {
+    await renderApp('/announcements', { signedInAs: 'senior_pm' })
+    expect(await screen.findByRole('article', { name: 'Welcome to FormbaxHR' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('article', { name: 'Engineering town hall on Friday' }),
+    ).not.toBeInTheDocument()
+  })
+})

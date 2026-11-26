@@ -9,6 +9,7 @@ import {
   Clock,
   Bell,
   ListChecks,
+  Megaphone,
   Scale,
   LayoutDashboard,
   Network,
@@ -68,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
       },
       { label: 'Org chart', icon: Network, to: '/organization/chart', roles: ROLES },
+      { label: 'Announcements', icon: Megaphone, to: '/announcements', roles: ROLES },
     ],
   },
   {
