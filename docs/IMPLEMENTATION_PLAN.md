@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1–5 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance, leave and approvals (balances, ledger, application, routing, approval workflow, HR overrides, cancellation, HR allocation, live dashboards). 536 tests; all checks pass. |
-| Current phase | Phase 5 complete (PR into `dev-main` open); Phase 6 next after the user merges. |
-| Current task | User review and merge of the Phase 5 PR; manual browser checks pending |
-| Next task | Phase 6 — P6-T01 (notifications). Still provisional: Q-LEAVE-01…03, Q-APPR-07 (D-090), Q-ATT-01…07 (D-086), Q-ORG-01…05 (D-084) |
-| Branch | `phase-5-leave-approvals` (from `dev-main` @ `a8e04c6`, published; PR into `dev-main`). Phases 1–4 merged into `dev-main` (PRs #1–#4). |
+| Overall state | Phases 1–6 implemented in mock mode: foundation, authentication and role dashboards, employees and organization, attendance, leave and approvals, notifications and announcements. 606 tests; all checks pass. |
+| Current phase | Phase 6 complete (PR into `dev-main` open); Phase 7 next after the user merges. |
+| Current task | User review and merge of the Phase 6 PR; manual browser checks pending |
+| Next task | Phase 7 — P7-T01 (Excel imports). Still provisional: Q-LEAVE-01…03, Q-APPR-07 (D-090), Q-ATT-01…07 (D-086), Q-ORG-01…05 (D-084) |
+| Branch | `phase-6-notifications` (from `dev-main` @ `691a2f3`, published; PR into `dev-main`). Phases 1–5 merged into `dev-main` (PRs #1–#5). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 5 committed and pushed (see `git log`). Verify with `git status`. |
+| Working tree | Phase 6 committed and pushed in small commits (see `git log`). Verify with `git status`. |
 | Mock mode | Implemented: all services run on in-memory mocks (`VITE_USE_MOCK_API=true`), "Mock data" badge in the top bar |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -38,12 +38,11 @@
 
 Update this section at the end of every session.
 
-- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 6 starts only after the user has merged the Phase 5 PR: update `dev-main`, create `phase-6-notifications`, publish it.
-- Ask about the open notification questions (Q-NOTIF-*) before building those rules. HR must receive every leave lifecycle event (D-064): requests already list HR as `mandatory` recipients, and Phase 6 turns those into notifications.
-- Phase 6 builds on: `services/mock/leave-store.ts` (lifecycle events: submit, recommend, decide, override, cancel), `services/mock/attendance-store.ts`, dashboards' notification previews (P2), the top bar.
-- Patterns: registry-reachable modules import other features' **pure modules directly**, never their `index.ts` (lint catches cycles). Pure rules in `features/*/lib`, mock backends run the same functions. Shared controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`, `PaginationBar`, `ConfirmDialog` (with reason).
-- Testing: `renderApp(path, { signedInAs })`; setup resets the HR, leave and attendance stores, the viewer and TanStack Query's `onlineManager`. Freeze the clock with `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed the stores. jsdom renders both desktop table and mobile list (scope with `within(table)`); Radix dialogs hide the page (`aria-hidden`) while open or closing, so grab regions before opening a dialog. Run long suites with `timeout` and `--testTimeout`.
+- Follow `CLAUDE.md` §2 and §9: check `gh pr list --base dev-main`. Phase 7 starts only after the user has merged the Phase 6 PR: update `dev-main`, create `phase-7-imports`, publish it. Check that the PR's last commit is in `dev-main` (Phase 5's last commit was merged late and had to be cherry-picked).
+- Ask about the open import questions (Q-IMP-*) before building those rules. Imports must never silently overwrite data (D-071).
 - **Small commits (D-092):** commit and push after each small task step, 20–30 commits per phase; per commit run typecheck, lint, format check and the touched tests; full checks at the end of the phase.
+- Patterns: pure rules in `features/*/lib`, mock backends in `services/mock/*` run the same functions; registry-reachable modules import other features' pure modules directly, never their `index.ts`. Cross-store events: the notification store receives events from the leave store; the attendance store registers itself as the reminder source (avoids import cycles).
+- Testing: setup resets the HR, notification, leave and attendance stores (notification first), the viewer and `onlineManager`. Freeze the clock with `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed the stores; reminders depend on the time of day. Radix menus/dialogs hide the rest of the page while open. Accessible names drop the space before `sr-only` text. Run long suites with `timeout` and `--testTimeout`.
 - Frontend focus (D-080); commit per `CLAUDE.md` §8; never merge PRs.
 
 ---
@@ -454,21 +453,21 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** In-app notification center and notification preferences against mock services.
 **Dependencies:** Phase 5 (events), Phase 2 shell.
-**Status:** In progress (2026-11-26) on `phase-6-notifications`.
+**Status:** Complete (2026-11-26): P6-T01…T10 implemented and verified in mock mode on `phase-6-notifications`, in small commits (D-092). Not visually checked in a browser.
 **Open items:** none. Q-NOT-01…03 answered by the user on 2026-11-26 (D-093): in-app only; reminders at 9:15 AM for no check-in and next morning for a missing check-out; announcements to all/departments/teams with optional expiry; reminders and announcements can be muted.
 
 ### Tasks and subtasks
 
-- [ ] **P6-T01** Types/schemas: `Notification`, `NotificationType` (leave submitted, approved, declined, cancelled, approval required, attendance reminder, HR announcement), read/unread state.
-- [ ] **P6-T02** `NotificationService` (mock/HTTP): list (paginated), unread count, mark read, mark all read.
-- [ ] **P6-T03** Notification center in the top navigation: unread badge, dropdown list, link to the related item.
-- [ ] **P6-T04** Notification history page with filters (type, read/unread, date).
-- [ ] **P6-T05** Leave lifecycle notifications wired to Phase 5 events; HR always included (mock logic mirrors the rule).
-- [ ] **P6-T06** Approval-required notifications to the relevant approvers/reviewers.
-- [ ] **P6-T07** Attendance reminders (display only; schedule rules **BLOCKED by Q-NOT-02**).
-- [ ] **P6-T08** HR announcements: create (HR only) and display; targeting/retention **BLOCKED by Q-NOT-03**.
-- [ ] **P6-T09** Polling or refetch strategy for unread count using TanStack Query (real-time transport such as WebSockets is not introduced without a requirement; record decision).
-- [ ] **P6-T10** Update API docs and backend notes (event-driven creation, recipient resolution server-side, Celery/email only if Q-NOT-01 requires it).
+- [x] **P6-T01** Types/schemas: `Notification`, `NotificationType` (leave submitted, approved, declined, cancelled, approval required, attendance reminder, HR announcement), read/unread state. (`features/notifications/lib/notification-types.ts`, `schemas/notification.schema.ts`; also preferences and announcements.)
+- [x] **P6-T02** `NotificationService` (mock/HTTP): list (paginated), unread count, mark read, mark all read. (Plus preferences; mock backend `services/mock/notification-store.ts`.)
+- [x] **P6-T03** Notification center in the top navigation: unread badge, dropdown list, link to the related item. (Latest 8, opening marks read, "Mark all as read", "View all notifications"; Radix keyboard/Escape.)
+- [x] **P6-T04** Notification history page with filters (type, read/unread, date). (`/notifications`, paginated, plus preferences section.)
+- [x] **P6-T05** Leave lifecycle notifications wired to Phase 5 events; HR always included (mock logic mirrors the rule). (`lib/leave-recipients.ts`, `lib/leave-messages.ts`; emitted by the leave mock on submit, decision/override and cancel.)
+- [x] **P6-T06** Approval-required notifications to the relevant approvers/reviewers. (Decide for decision-makers, review for optional reviewers.)
+- [x] **P6-T07** Attendance reminders (display only; schedule rules **answered (D-093)**: 9:15 AM no check-in on working days unless on leave; next morning for a missing check-out). (`lib/reminder-rules.ts`; the attendance mock is the reminder source.)
+- [x] **P6-T08** HR announcements: create (HR only) and display; targeting/retention **answered (D-093)**: everyone/departments/teams, optional expiry, archive. (`/announcements`; muting supported.)
+- [x] **P6-T09** Polling or refetch strategy for unread count using TanStack Query (real-time transport such as WebSockets is not introduced without a requirement; record decision). (60 s polling + window focus, D-094.)
+- [x] **P6-T10** Update API docs and backend notes (event-driven creation, recipient resolution server-side, Celery/email only if Q-NOT-01 requires it). (§6 Notifications and announcements; in-app only, so no email.)
 
 ### Required tests
 - Unread count updates after mark-read; mark-all-read; pagination.
@@ -677,6 +676,10 @@ Append entries; do not rewrite history.
 | 2026-11-25 | P5 | `src/services/mock/leave-store.ts` (+test), `src/features/dashboard/components/live-leave.tsx` | created | Mock leave backend, live leave dashboard widgets |
 | 2026-11-25 | P5 | `src/services/mock/{hr-store,attendance-store}.ts` (+test), `src/services/registry.ts`, `src/test/setup.ts`, `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/app-shell.test.tsx`, dashboard pages, lists and tests | modified | Leave org view, "on leave" count, registry, store reset, routes and nav, dashboards on the leave service |
 | 2026-11-25 | P5 | `docs/{IMPLEMENTATION_PLAN,DECISIONS,API_INTEGRATION,ARCHITECTURE}.md`, `README.md` | modified | User answers D-088/D-089, D-090, D-091, leave endpoints, progress |
+| 2026-11-26 | P6 | `src/features/notifications/**` | created | Types, recipient rules, texts, reminder and announcement rules (+tests), schemas, services (+http, mock, test), hooks, item, preferences, announcement card/dialog, two pages, tests |
+| 2026-11-26 | P6 | `src/services/mock/notification-store.ts` (+test), `src/features/dashboard/components/live-notifications.tsx`, `src/app/notification-menu.test.tsx` | created | Mock notification backend, live dashboard notifications, menu test |
+| 2026-11-26 | P6 | `src/app/layouts/shell/notification-menu.tsx`, `src/services/mock/{hr-store,leave-store,attendance-store}.ts` (+tests), `src/services/registry.ts` (+test), `src/test/setup.ts`, `src/app/router/routes.tsx`, `src/app/navigation.ts` (+test), `src/app/app-shell.test.tsx`, leave/attendance hooks, employee dashboard (+test) | modified | Real notification center, events and reminders, registry, routes and nav |
+| 2026-11-26 | P6 | `CLAUDE.md`, `docs/{IMPLEMENTATION_PLAN,DECISIONS,API_INTEGRATION,ARCHITECTURE}.md`, `README.md` | modified | Small-commit rule (cherry-picked), D-093, D-094, notification endpoints, status |
 | 2026-11-25 | P1-T07 | `package.json`, `pnpm-lock.yaml`, `src/App.tsx`, `src/index.css`, `src/lib/utils.test.ts`, `tsconfig.json`, `CLAUDE.md` | modified | Prettier dep + scripts; formatting (wrapping only); command list |
 | 2026-11-25 | P1-T04 | `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `src/index.css`, `src/App.tsx`, `.oxlintrc.json`, `CLAUDE.md` | modified | Deps; root paths; CSS imports + radius/heading tokens (colour tokens unchanged); preview uses Button + Lucide; lint override for `src/components/ui/**`; §7 commands corrected |
 | 2026-11-25 | Doc integration | `CLAUDE.md` | rewritten | Supplied file was an exact duplicate of `DECISIONS.md` (content preserved in `docs/DECISIONS.md` and in commit `d0fc183`); replaced with Claude Code session instructions |
@@ -771,6 +774,12 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | `vitest run src/features/leave/pages` | First runs: duplicate links (desktop table + mobile list), section and picker both named "Employee" (section renamed), curly quotes, page `aria-hidden` while dialogs close (test timing) → 11/11 | P5 screens |
 | 2026-11-25 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 5) | All exit 0; 38 files / 536 tests; 3 × 536 in timezone runs. Main chunk 464.69 kB / 145.79 kB gzip (under Vite's 500 kB warning); leave pages own chunks (2.4–5.0 kB) | P5 acceptance |
 | 2026-11-25 | Dev server `curl` of `/leave`, `/leave/apply`, `/leave/approvals` and leave modules | All 200; no errors; server stopped. Not a visual check | P5 |
+| 2026-11-26 | `git fetch`, `dev-main` fast-forward to `691a2f3` (PR #5 merged); `phase-6-notifications` created and pushed; `git branch --contains 1701524` | The small-commit rule commit was not part of the merge → cherry-picked onto the Phase 6 branch | Phase 6 start |
+| 2026-11-26 | User answers to Q-NOT-01…03 and muting | Recorded as D-093 | Phase 6 rules |
+| 2026-11-26 | Per-commit checks (typecheck, lint, format check, touched tests) before each of the Phase 6 commits | All passed before each commit; the reminder rules were also run under UTC and America/Los_Angeles | D-092 |
+| 2026-11-26 | Notable test findings during Phase 6 | Menu test: Radix hides the page while a menu is open and the computed accessible name drops the space before sr-only text (tests adjusted); a weak `toContain(expect.stringMatching)` assertion and a conditional early return replaced by real assertions; label association fixed for an a11y lint warning | P6 |
+| 2026-11-26 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 6) | All exit 0; 48 files / 606 tests; 3 × 606 in timezone runs. Main chunk 470.79 kB / 147.45 kB gzip (under 500 kB); notification pages own chunks (6.0 kB, 6.5 kB) | P6 acceptance |
+| 2026-11-26 | Dev server `curl` of `/notifications`, `/announcements` and notification modules | All 200; no errors; server stopped. Not a visual check | P6 |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -793,3 +802,4 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | Phase 3 implemented and verified: employees directory/profile/create/edit/deactivate, organization management, reporting hierarchy with cycle checks, org chart, scope-aware mock backend; tests found a render loop and duplicate field names (fixed) | P3-T01…T15 | Q-ORG-01…05 provisional (D-084); manual browser checks pending | Phase 4 after PR merge |
 | 2026-11-25 | Phase 4 implemented and verified: pure Karachi attendance policy, mock attendance backend, check-in/out card, history, calendar, team/org records with filters, HR corrections with reason and audit history, CSV export, live dashboards; tests found a query-pausing test-isolation bug (fixed) | P4-T01…T14 | Q-ATT-01…07 provisional (D-086); manual browser checks pending | Phase 5 after PR merge |
 | 2026-11-25 | Phase 5 implemented and verified: user answered the leave/approval questions (D-088, D-089); pure duration, balance, routing and workflow modules; mock leave backend with concurrency, idempotency and an append-only ledger; balances, application, request page, approvals inbox, leave records, HR balances; live dashboards | P5-T01…T18 | Q-LEAVE-01…03, Q-APPR-07 provisional (D-090); manual browser checks pending | Phase 6 after PR merge |
+| 2026-11-26 | Phase 6 implemented and verified in small commits: user answered the notification questions (D-093); pure recipient/text/reminder/announcement rules; mock notification backend fed by leave events and attendance reminders; notification center, history with filters and preferences, announcements with HR publishing and archiving; live dashboard notifications | P6-T01…T10 | None new; manual browser checks pending | Phase 7 after PR merge |
