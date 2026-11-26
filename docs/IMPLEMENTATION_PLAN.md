@@ -12,13 +12,13 @@
 
 | Field | Value |
 |---|---|
-| Overall state | Phases 1–7 implemented in mock mode (Phase 7 Excel imports uncommitted, awaiting approval). 628 tests; all checks pass. |
-| Current phase | Phase 7 complete, uncommitted; Phase 8 (reports, settings, audit) next. |
-| Current task | User approval to commit and push Phase 7 (D-095) |
-| Next task | Phase 8 — reports, settings, audit (feature-first, D-095) |
-| Branch | `phase-7-imports` (from `dev-main` @ `eaebe82`, published, no commits yet). Phases 1–6 merged (PRs #1–#6). |
+| Overall state | Phases 1–8 implemented in mock mode (frontend MVP feature set). Phase 8 uncommitted, awaiting approval. 641 tests; all checks pass. Phase 9 and section H deferred. |
+| Current phase | Phase 8 complete (uncommitted); MVP acceptance review done (see section G). |
+| Current task | User approval to commit/push Phase 8; user decides next step (D-095) |
+| Next task | User decision: remaining gaps (section H, Phase 9) |
+| Branch | `phase-8-reports-settings-audit` (from `dev-main` @ `3ee68a4`, local only). Phases 1–7 merged (PRs #1–#7). |
 | Last known commits | `main`: `4c7560c`, `3ffa6c8`, `d0fc183`, `96c69c7`, `b25a165`, `0c67b6f` (ahead of `origin/main` by 4, not pushed). `phase-1-foundation`: `3c73b5d` feat: toolchain; `0001379` docs: progress + commit convention; `451be26` docs: chore type (local only, no upstream). |
-| Working tree | Phase 7 changes uncommitted. Verify with `git status`. |
+| Working tree | Phase 8 changes uncommitted. Verify with `git status`. |
 | Mock mode | Implemented: all services run on in-memory mocks (`VITE_USE_MOCK_API=true`), "Mock data" badge in the top bar |
 | Backend | Out of scope for this work: the user builds it independently after the frontend (D-080). Everything runs in mock mode. Do not inspect or plan backend code or folders. |
 
@@ -529,36 +529,36 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** Reporting, administrative settings and audit log views against mock services.
 **Dependencies:** Phases 3–7.
-**Status:** Not started.
+**Status:** Complete (2026-11-26) on `phase-8-reports-settings-audit`, uncommitted (D-095); provisional handling D-097. Not checked in a browser.
 **Open items:** Q-REP-01 (export formats), Q-SET-01 (settings versioning and effective dates), Q-SET-02 (holiday calendar scope), Q-AUD-01 (retention and visibility), plus any Phase 4/5 questions that affect reports.
 
 ### Tasks and subtasks
 
 #### Reports
-- [ ] **P8-T01** `ReportService` (mock/HTTP) with typed filters and results.
-- [ ] **P8-T02** Attendance report (date range, department/team/employee).
-- [ ] **P8-T03** Late arrival report (uses Late-In tracking only; no payroll implications).
-- [ ] **P8-T04** Leave utilization report.
-- [ ] **P8-T05** Leave balances report.
-- [ ] **P8-T06** Department report.
-- [ ] **P8-T07** Employee report.
-- [ ] **P8-T08** Filtering, sorting, pagination, charts (Recharts) where useful.
-- [ ] **P8-T09** Exports (formats recorded in DECISIONS), formula-injection neutralized, large-export UX.
-- [ ] **P8-T10** Role-scoped report access (UX; backend authoritative).
+- [x] **P8-T01** `ReportService` (mock/HTTP) with typed filters and results.
+- [x] **P8-T02** Attendance report (date range, department/team/employee).
+- [x] **P8-T03** Late arrival report (uses Late-In tracking only; no payroll implications).
+- [x] **P8-T04** Leave utilization report.
+- [x] **P8-T05** Leave balances report.
+- [x] **P8-T06** Department report.
+- [x] **P8-T07** Employee report.
+- [x] **P8-T08** Filtering, sorting, pagination, charts (Recharts) where useful.
+- [x] **P8-T09** Exports (formats recorded in DECISIONS), formula-injection neutralized, large-export UX.
+- [x] **P8-T10** Role-scoped report access (UX; backend authoritative).
 
 #### Settings
-- [ ] **P8-T11** Attendance policy settings screen (displays confirmed policy; editing of values **only if** the user confirms policies are editable, see Q-SET-01).
-- [ ] **P8-T12** Leave allocation settings (per category; HR-configurable). Year definition, proration and carry-forward fields **BLOCKED** until Q-LEAVE-01/02/03 are answered.
-- [ ] **P8-T13** Working days settings (**BLOCKED by Q-LEAVE-04** / Q-ATT-05 for semantics).
-- [ ] **P8-T14** Holidays management (**scope BLOCKED by Q-SET-02**).
-- [ ] **P8-T15** Approval workflow settings (sequential/parallel configuration; parallel completion rule **BLOCKED by Q-APPR-03**).
-- [ ] **P8-T16** Company information and organization settings.
+- [x] **P8-T11** Attendance policy settings screen (displays confirmed policy; editing of values **only if** the user confirms policies are editable, see Q-SET-01). (read-only; Q-SET-01 open)
+- [x] **P8-T12** Leave allocation settings (per category; HR-configurable). Year definition, proration and carry-forward fields **BLOCKED** until Q-LEAVE-01/02/03 are answered. (default allocation editable; year/proration/carry-forward still blocked)
+- [x] **P8-T13** Working days settings (**BLOCKED by Q-LEAVE-04** / Q-ATT-05 for semantics). (read-only display of confirmed Mon–Fri)
+- [x] **P8-T14** Holidays management (**scope BLOCKED by Q-SET-02**). (company-wide list by HR; affects leave duration only, D-097)
+- [x] **P8-T15** Approval workflow settings (sequential/parallel configuration; parallel completion rule **BLOCKED by Q-APPR-03**). (any/all/sequential + review required; D-067/D-089)
+- [x] **P8-T16** Company information and organization settings.
 
 #### Audit
-- [ ] **P8-T17** `AuditService` (mock/HTTP): list with filters (actor, action, entity, date), detail with before/after.
-- [ ] **P8-T18** Audit views for: employee changes, attendance corrections, leave approvals, leave rejections, leave ledger transactions, imports, administrative changes.
-- [ ] **P8-T19** Audit log is read-only in UI; no edit/delete controls.
-- [ ] **P8-T20** Update API docs and backend notes (audit model, append-only guarantees, retention per Q-AUD-01).
+- [x] **P8-T17** `AuditService` (mock/HTTP): list with filters (actor, action, entity, date), detail with before/after.
+- [x] **P8-T18** Audit views for: employee changes, attendance corrections, leave approvals, leave rejections, leave ledger transactions, imports, administrative changes.
+- [x] **P8-T19** Audit log is read-only in UI; no edit/delete controls.
+- [x] **P8-T20** Update API docs and backend notes (audit model, append-only guarantees, retention per Q-AUD-01). (§6 Reports, settings, audit)
 
 ### Required tests
 - Each report: filter combinations, empty/error states, export content.
@@ -780,6 +780,7 @@ Record real command outputs only. Never invent results.
 | 2026-11-26 | `pnpm typecheck`, `lint`, `format:check`, `vitest run` (whole suite), suite under TZ=UTC / America/Los_Angeles / Asia/Karachi, `build` (Phase 6) | All exit 0; 48 files / 606 tests; 3 × 606 in timezone runs. Main chunk 470.79 kB / 147.45 kB gzip (under 500 kB); notification pages own chunks (6.0 kB, 6.5 kB) | P6 acceptance |
 | 2026-11-26 | Dev server `curl` of `/notifications`, `/announcements` and notification modules | All 200; no errors; server stopped. Not a visual check | P6 |
 | 2026-11-26 | Phase 7: typecheck, lint, format check, focused tests (imports lib/store/pages 33), whole suite once, `build` | All pass; 51 files / 628 tests; main chunk 472.17 kB | P7 (feature-first verification, D-095) |
+| 2026-11-26 | Phase 8: typecheck, lint, format check, focused tests (reports calc, audit/settings/report stores, page workflows: 15), whole suite, TZ=UTC and America/Los_Angeles runs, `build`, dev-server curl of /reports /settings /audit | All pass; 54 files / 641 tests (also in both TZ runs); main chunk 480.45 kB; reports chunk 40.67 kB | P8 + MVP review |
 | 2026-11-25 | `vite --port 5179` + `curl /` | Served `<title>FormbaxHR</title>`; server stopped afterwards | Dev server smoke test |
 | 2026-11-25 | Markdown link check + ID cross-reference (grep) | 2 relative links in `CLAUDE.md` resolve; all Q-/D- IDs referenced in the plan and `CLAUDE.md` are defined in `DECISIONS.md`; all 10 phases have Objectives, Dependencies, Status, Required tests, Acceptance criteria, Deliverables | No application code exists yet; no build/test checks possible |
 
@@ -804,6 +805,7 @@ Record real command outputs only. Never invent results.
 | 2026-11-25 | Phase 5 implemented and verified: user answered the leave/approval questions (D-088, D-089); pure duration, balance, routing and workflow modules; mock leave backend with concurrency, idempotency and an append-only ledger; balances, application, request page, approvals inbox, leave records, HR balances; live dashboards | P5-T01…T18 | Q-LEAVE-01…03, Q-APPR-07 provisional (D-090); manual browser checks pending | Phase 6 after PR merge |
 | 2026-11-26 | Phase 6 implemented and verified in small commits: user answered the notification questions (D-093); pure recipient/text/reminder/announcement rules; mock notification backend fed by leave events and attendance reminders; notification center, history with filters and preferences, announcements with HR publishing and archiving; live dashboard notifications | P6-T01…T10 | None new; manual browser checks pending | Phase 7 after PR merge |
 | 2026-11-26 | Feature-first strategy adopted (D-095); Phase 7 Excel imports built with provisional rules (D-096) | P7-T01…T13 | Q-IMP-01…05 provisional | Commit approval, then Phase 8 |
+| 2026-11-26 | Phase 8 reports, settings and audit built; MVP acceptance review: MVP READY WITH LIMITATIONS (mock only, no browser check) | P8-T01…T20 | Q-REP-01, Q-SET-01/02, Q-AUD-01 provisional (D-097) | User decides next |
 
 ## H. DEFERRED WORK (D-095, after all main features)
 
