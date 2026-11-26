@@ -64,3 +64,29 @@ describe('notification history (P6-T04)', () => {
     expect(within(items).getByText('You have not checked in today')).toBeInTheDocument()
   })
 })
+
+describe('preferences (D-093)', () => {
+  it('mutes reminders; leave and approval notifications stay on', async () => {
+    freezeAt('09:30:00')
+    await renderApp('/notifications', { signedInAs: 'manager' })
+    const prefs = await screen.findByRole('region', { name: 'Preferences' })
+    const always = await within(prefs).findByRole('list', { name: 'Always on' })
+    expect(within(always).getByText('Action needed')).toBeInTheDocument()
+    const reminders = within(prefs).getByRole('checkbox', { name: /Receive attendance reminders/ })
+    expect(reminders).toBeChecked()
+    await userEvent.click(reminders)
+    await userEvent.click(within(prefs).getByRole('button', { name: 'Save preferences' }))
+    await waitFor(() =>
+      expect(
+        within(prefs).getByRole('checkbox', { name: /Receive attendance reminders/ }),
+      ).not.toBeChecked(),
+    )
+    expect(
+      mockNotificationStore.notify({
+        recipientId: 'u-mgr-001',
+        type: 'attendance_reminder',
+        title: 'R',
+      }),
+    ).toBeNull()
+  })
+})

@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/feedback/error-state'
 import { ListSkeleton } from '@/components/feedback/loading-skeletons'
 import { NativeSelect } from '@/components/forms/native-select'
 import { PageHeader } from '@/components/shared/page-header'
+import { SectionCard } from '@/components/shared/section-card'
 import { PaginationBar } from '@/components/tables/pagination-bar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ import {
   useUnreadCount,
 } from '../api/use-notifications'
 import { NotificationContent } from '../components/notification-item'
+import { NotificationPreferences } from '../components/notification-preferences'
 import { NOTIFICATION_TYPE_LABELS, NOTIFICATION_TYPES } from '../lib/notification-types'
 import type { Notification, NotificationListQuery } from '../schemas/notification.schema'
 
@@ -172,6 +174,9 @@ export function NotificationsPage() {
           </>
         )}
       </section>
+      <SectionCard title="Preferences" description="Notifications are shown in the app only.">
+        <NotificationPreferences />
+      </SectionCard>
     </div>
   )
 }
