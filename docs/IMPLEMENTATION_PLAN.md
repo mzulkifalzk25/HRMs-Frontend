@@ -454,8 +454,8 @@ Premium enterprise SaaS look: modern, clean, light theme, neutral backgrounds, b
 
 **Objectives:** In-app notification center and notification preferences against mock services.
 **Dependencies:** Phase 5 (events), Phase 2 shell.
-**Status:** Not started.
-**Open items:** Q-NOT-01 (email channel scope), Q-NOT-02 (attendance reminder rules), Q-NOT-03 (announcement targeting and retention).
+**Status:** In progress (2026-11-26) on `phase-6-notifications`.
+**Open items:** none. Q-NOT-01…03 answered by the user on 2026-11-26 (D-093): in-app only; reminders at 9:15 AM for no check-in and next morning for a missing check-out; announcements to all/departments/teams with optional expiry; reminders and announcements can be muted.
 
 ### Tasks and subtasks
 
