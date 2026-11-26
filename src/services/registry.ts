@@ -38,6 +38,9 @@ import type {
   AnnouncementService,
   NotificationService,
 } from '@/features/notifications/api/notification.service'
+import { createHttpImportService } from '@/features/imports/api/import.http'
+import { createMockImportService } from '@/features/imports/api/import.mock'
+import type { ImportService } from '@/features/imports/api/import.service'
 import { env } from '@/lib/env'
 import { apiClient, type HttpClient } from '@/services/api'
 import { createHttpHealthService } from '@/services/health/health.http'
@@ -69,6 +72,7 @@ export type Services = {
   approvals: ApprovalService
   notifications: NotificationService
   announcements: AnnouncementService
+  imports: ImportService
 }
 
 export function createServices(options: {
@@ -108,6 +112,7 @@ export function createServices(options: {
       approvals: createMockApprovalService({ latencyMs }),
       notifications: createMockNotificationService({ latencyMs }),
       announcements: createMockAnnouncementService({ latencyMs }),
+      imports: createMockImportService({ latencyMs }),
     }
   }
   return {
@@ -123,6 +128,7 @@ export function createServices(options: {
     approvals: createHttpApprovalService(options.client),
     notifications: createHttpNotificationService(options.client),
     announcements: createHttpAnnouncementService(options.client),
+    imports: createHttpImportService(options.client),
   }
 }
 
