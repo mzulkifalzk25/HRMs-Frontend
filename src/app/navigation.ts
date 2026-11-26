@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ClipboardList,
   Clock,
+  Bell,
   ListChecks,
   Scale,
   LayoutDashboard,
@@ -84,7 +85,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Account',
-    items: [{ label: 'My profile', icon: UserRound, to: '/profile', roles: ROLES, end: true }],
+    items: [
+      { label: 'Notifications', icon: Bell, to: '/notifications', roles: ROLES },
+      { label: 'My profile', icon: UserRound, to: '/profile', roles: ROLES, end: true },
+    ],
   },
 ]
 

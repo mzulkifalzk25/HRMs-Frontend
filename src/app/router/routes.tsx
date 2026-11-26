@@ -110,6 +110,12 @@ const LEAVE_PAGES = {
     (m) => m.LeaveBalancesPage,
   ),
 }
+const NOTIFICATION_PAGES = {
+  history: lazyPage(
+    () => import('@/features/notifications/pages/notifications-page'),
+    (m) => m.NotificationsPage,
+  ),
+}
 const ORGANIZATION_PAGES = {
   manage: lazyPage(
     () => import('@/features/organization/pages/organization-page'),
@@ -187,6 +193,12 @@ function employeeAndOrganizationRoutes(): RouteObject[] {
           children: [{ path: 'balances', lazy: LEAVE_PAGES.balances, handle: crumb('Balances') }],
         },
       ],
+    },
+    {
+      // Phase 6: every signed-in user has notifications.
+      path: 'notifications',
+      handle: crumb('Notifications'),
+      children: [{ index: true, lazy: NOTIFICATION_PAGES.history }],
     },
     {
       path: 'organization',

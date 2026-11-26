@@ -17,6 +17,7 @@ describe('navigationForRole', () => {
       'Org chart',
       'Organization',
       'Leave balances',
+      'Notifications',
       'My profile',
     ],
     manager: [
@@ -28,6 +29,7 @@ describe('navigationForRole', () => {
       'Approvals',
       'Leave records',
       'Org chart',
+      'Notifications',
       'My profile',
     ],
     senior_pm: [
@@ -39,6 +41,7 @@ describe('navigationForRole', () => {
       'Approvals',
       'Leave records',
       'Org chart',
+      'Notifications',
       'My profile',
     ],
     associate_pm: [
@@ -50,6 +53,7 @@ describe('navigationForRole', () => {
       'Approvals',
       'Leave records',
       'Org chart',
+      'Notifications',
       'My profile',
     ],
     team_lead: [
@@ -61,10 +65,18 @@ describe('navigationForRole', () => {
       'Approvals',
       'Leave records',
       'Org chart',
+      'Notifications',
       'My profile',
     ],
     // Employees have no directory or team records: only their own data (D-044).
-    employee: ['Dashboard', 'My attendance', 'My leave', 'Org chart', 'My profile'],
+    employee: [
+      'Dashboard',
+      'My attendance',
+      'My leave',
+      'Org chart',
+      'Notifications',
+      'My profile',
+    ],
   }
 
   it.each(ROLES)('%s sees only the modules that exist for their role', (role) => {
