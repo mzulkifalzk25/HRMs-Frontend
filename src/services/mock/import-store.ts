@@ -6,6 +6,7 @@
 import {
   fileProblem,
   IMPORT_LIMITS,
+  IMPORT_TYPE_LABELS,
   mappingProblems,
   UPDATE_ALLOWED,
   type ColumnMapping,
@@ -23,6 +24,7 @@ import { appDateKey, shiftDateKey, toAppIsoString } from '@/lib/datetime'
 import { ApiError } from '@/services/api'
 import { LEAVE_TYPE_LABELS, type LeaveType } from '@/types/hr'
 import { mockAttendanceStore, type AttendanceStore } from './attendance-store'
+import { mockAuditStore } from './audit-store'
 import { mockHrStore, type HrStore } from './hr-store'
 import { mockLeaveStore, type LeaveStore } from './leave-store'
 import { getMockViewer, type MockViewer } from './mock-session'
@@ -579,6 +581,22 @@ export function createImportStore(
           ? 'failed'
           : 'completed'
       job.executedAt = toAppIsoString(now())
+      mockAuditStore.record({
+        actorId: viewer.id,
+        actorName: job.createdByName,
+        action: 'imported',
+        entity: 'import',
+        entityId: job.id,
+        entityLabel: `${IMPORT_TYPE_LABELS[job.type]}: ${job.fileName}`,
+        before: null,
+        after: {
+          Created: String(job.summary.create),
+          Updated: String(job.summary.update),
+          Skipped: String(job.summary.skip),
+          Errors: String(job.summary.error),
+          'Update existing records': job.updateExisting ? 'Yes' : 'No',
+        },
+      })
       return { job: publicJob(job), rows: job.rowResults }
     },
   }

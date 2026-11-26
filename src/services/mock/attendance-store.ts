@@ -22,6 +22,7 @@ import { CORRECTION_REASON_MIN_LENGTH } from '@/features/attendance/schemas/atte
 import {
   appDateKey,
   appWallClockToInstant,
+  formatAppTime,
   shiftDateKey,
   toAppIsoString,
   toAppZone,
@@ -29,6 +30,7 @@ import {
 import { ApiError } from '@/services/api'
 import type { Page } from '@/types/api'
 import { mockHrStore, type HrStore } from './hr-store'
+import { mockAuditStore } from './audit-store'
 import { mockLeaveStore } from './leave-store'
 import { mockNotificationStore } from './notification-store'
 import { getMockViewer } from './mock-session'
@@ -308,6 +310,18 @@ export function createAttendanceStore(
       const updated = build(person, current.date, input.checkInAt, input.checkOutAt, true)
       records.set(id, updated)
       counter += 1
+      const t = (iso: string | null) => (iso ? formatAppTime(iso, { seconds: true }) : 'none')
+      mockAuditStore.record({
+        actorId: v.id,
+        actorName: actor?.name ?? 'HR',
+        action: 'corrected',
+        entity: 'attendance',
+        entityId: id,
+        entityLabel: `${person.name}, ${current.date}`,
+        reason: input.reason.trim(),
+        before: { 'Check-in': t(current.checkInAt), 'Check-out': t(current.checkOutAt) },
+        after: { 'Check-in': t(updated.checkInAt), 'Check-out': t(updated.checkOutAt) },
+      })
       corrections.unshift({
         id: `cor-${counter}`,
         recordId: id,
