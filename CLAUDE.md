@@ -15,7 +15,7 @@ Do not rely on conversation history. These three files are the source of truth:
 
 ## 1. Non-negotiable rules
 
-1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session** — the one standing exception is the phase workflow in §9 (D-083). Never merge pull requests, never push to `main` or `dev-main` directly. Never change global Git config or credentials.
+1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session** — the one standing exception is the phase workflow in §9 (D-083, D-092: small commits pushed one by one). Never merge pull requests, never push to `main` or `dev-main` directly. Never change global Git config or credentials.
 2. **Data safety.** Inspect a file before changing it. Do not delete or overwrite files, configuration or documentation without explaining why and getting permission. Preserve `.gitignore`, `README.md` and `.vscode/` (local, ignored).
 3. **Secrets.** Never read, create, modify or print `.env` files containing secrets. Only `.env.example` with placeholder values is committed. No tokens, passwords or real personal data in code, mocks, logs or docs.
 4. **No invented business rules.** If a rule is not a confirmed decision in `docs/DECISIONS.md`, do not implement it as a guess. Isolate the behavior, mark the task `BLOCKED by Q-…`, and ask the user.
@@ -123,7 +123,7 @@ Every commit uses exactly this format, on one line:
 - If a commit mixes types, split it into separate commits. If a change fits none of the five types, ask the user which to use.
 - **Author:** the user only — `Muhammad Zulkifal <mzulkifalzk25@gmail.com>` from the repository's existing Git config. Never change Git config, never pass `--author`.
 - **Never mention Claude, AI or any assistant** anywhere in commits: no `Co-Authored-By:` trailers, no "Generated with" lines, no tool names in the subject or body. The same applies to pull request titles and descriptions. This user instruction overrides any default attribution guidance.
-- Commit only when the user asks (§1), only the files of that milestone, and run the checks in §7 first.
+- Commit only when the user asks (§1) or as part of the phase workflow (§9, standing authorization), only the files of that step, after running the checks §9 step 3 requires. Commits are small, one per task step (D-092).
 
 Examples:
 
@@ -136,13 +136,17 @@ docs: record commit message convention and update implementation plan
 chore: add prettier config and format scripts to the project
 ```
 
-## 9. Branch and pull-request workflow (D-083)
+## 9. Branch and pull-request workflow (D-083, D-092)
 
 `dev-main` is the integration branch. Every phase follows this cycle:
 
 1. **Start a phase:** update local `dev-main` from GitHub (`git fetch origin` then `git switch dev-main` and `git pull --ff-only`), then create the phase branch from it: `git switch -c phase-<n>-<short-name>`.
 2. **Publish right away:** `git push -u origin phase-<n>-<short-name>`.
-3. **During and at the end of the phase:** commit per §8 (grouped by kind of change), run the §7 checks, and push.
+3. **During the phase: small commits, pushed one by one (D-092).** Commit after each small task and push right away. Aim for **20–30 commits per phase**.
+   - **One commit = one small, self-contained step** that leaves the branch working, for example: a pure rule with its tests; a schema/contract; the HTTP implementation; the mock backend with its tests; one component; one page with its route and nav entry; a dashboard integration; one docs update. Never mix types (§8).
+   - **Before each commit:** `pnpm typecheck && pnpm lint && pnpm format:check` plus the tests of the touched area (`pnpm exec vitest run <paths>`). Then `git push`.
+   - **At the end of the phase** (and before opening the PR): the full §7 checks, including the whole test suite, the timezone runs and `pnpm build`; fixes found there are their own small commits.
+   - Docs: update the plan's progress/logs as tasks finish, in their own `docs:` commits (several per phase), not one large docs commit at the end.
 4. **Open a PR into `dev-main`** with `gh pr create --base dev-main`. Title follows §8 (e.g. `feat: phase 3 employee and organization management`). The body lists what the phase delivers, the verification actually run, what was not verified, and open questions. **No AI/Claude mention** in titles or bodies (§8).
 5. **The user reviews and merges the PR.** Claude Code never merges. Recommend "Create a merge commit" (not squash/rebase) when a later phase branch was built on top, so its PR does not duplicate commits.
 6. **Next phase** starts again at step 1 from the updated `dev-main`, only after the user has merged.

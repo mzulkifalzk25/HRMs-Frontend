@@ -43,6 +43,7 @@ Update this section at the end of every session.
 - Phase 6 builds on: `services/mock/leave-store.ts` (lifecycle events: submit, recommend, decide, override, cancel), `services/mock/attendance-store.ts`, dashboards' notification previews (P2), the top bar.
 - Patterns: registry-reachable modules import other features' **pure modules directly**, never their `index.ts` (lint catches cycles). Pure rules in `features/*/lib`, mock backends run the same functions. Shared controls: `NativeSelect`, `CheckboxList`, `FormField`, `applyServerErrors`, `PaginationBar`, `ConfirmDialog` (with reason).
 - Testing: `renderApp(path, { signedInAs })`; setup resets the HR, leave and attendance stores, the viewer and TanStack Query's `onlineManager`. Freeze the clock with `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime` and reseed the stores. jsdom renders both desktop table and mobile list (scope with `within(table)`); Radix dialogs hide the page (`aria-hidden`) while open or closing, so grab regions before opening a dialog. Run long suites with `timeout` and `--testTimeout`.
+- **Small commits (D-092):** commit and push after each small task step, 20–30 commits per phase; per commit run typecheck, lint, format check and the touched tests; full checks at the end of the phase.
 - Frontend focus (D-080); commit per `CLAUDE.md` §8; never merge PRs.
 
 ---
