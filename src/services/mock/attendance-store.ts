@@ -28,6 +28,7 @@ import {
 import { ApiError } from '@/services/api'
 import type { Page } from '@/types/api'
 import { mockHrStore, type HrStore } from './hr-store'
+import { mockLeaveStore } from './leave-store'
 import { getMockViewer } from './mock-session'
 
 const HISTORY_DAYS = 30
@@ -55,8 +56,14 @@ const err = (
   fieldErrors?: Record<string, string[]>,
 ) => new ApiError({ status, code, message, fieldErrors })
 
-export function createAttendanceStore(options: { hr?: HrStore; now?: () => Date } = {}) {
+/** Approved leave lookup (the leave backend), used for the "on leave" count. */
+type LeaveLookup = { isOnLeave(employeeId: string, date: string): boolean }
+
+export function createAttendanceStore(
+  options: { hr?: HrStore; now?: () => Date; leave?: LeaveLookup } = {},
+) {
   const hr = options.hr ?? mockHrStore
+  const leave = options.leave ?? mockLeaveStore
   const now = options.now ?? (() => new Date())
   let records = new Map<string, AttendanceRecord>()
   let corrections: CorrectionEntry[] = []
@@ -294,13 +301,15 @@ export function createAttendanceStore(options: { hr?: HrStore; now?: () => Date 
           r.date < today &&
           people.some((p) => p.id === r.employeeId),
       ).length
+      const checkedIn = new Set(todays.map((r) => r.employeeId))
+      const onLeave = people.filter((p) => !checkedIn.has(p.id) && leave.isOnLeave(p.id, today))
       return {
         date: today,
         total: people.length,
         present: todays.length,
         late: todays.filter((r) => r.checkInStatus === 'late').length,
-        onLeave: 0, // leave arrives in Phase 5
-        notCheckedIn: people.length - todays.length,
+        onLeave: onLeave.length, // approved leave today, not checked in
+        notCheckedIn: people.length - todays.length - onLeave.length,
         absent: 0, // provisional: the definition of absent is open (Q-ATT-02)
         incomplete,
       }

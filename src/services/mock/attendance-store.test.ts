@@ -199,7 +199,7 @@ describe('summary', () => {
     as('hr_admin')
     const summary = attendanceSummarySchema.parse(store.summary())
     expect(summary.present).toBeGreaterThanOrEqual(1)
-    expect(summary.present + summary.notCheckedIn).toBe(summary.total)
+    expect(summary.present + summary.notCheckedIn + summary.onLeave).toBe(summary.total)
     expect(summary.absent).toBe(0)
     as('employee')
     expect(store.summary()).toMatchObject({ total: 1, present: 1 })
