@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { appDateKey } from '@/lib/datetime'
 import { userMessage } from '@/services/api'
 import { dateKeySchema, LEAVE_TYPE_LABELS } from '@/types/hr'
+import { useSettings } from '@/features/settings/api/use-settings'
 import { useLeaveBalances, useRoutePreview, useSubmitLeave } from '../api/use-leave'
 import { ParticipantsPanel } from '../components/participants-panel'
 import { balanceOf } from '../lib/balance'
@@ -43,6 +44,7 @@ export function ApplyLeavePage() {
   const year = leaveYearOf(today)
   const balances = useLeaveBalances(null, year)
   const submitLeave = useSubmitLeave()
+  const settings = useSettings()
   const attachmentId = useId()
   const form = useForm<LeaveApplicationFormValues, unknown, LeaveApplicationInput>({
     resolver: zodResolver(leaveApplicationFormSchema),
@@ -67,12 +69,14 @@ export function ApplyLeavePage() {
   const selected = touchedManagers ? managerIds : choices.map((c) => c.id)
 
   const validDates = isDateKey(startDate) && isDateKey(endDate) && endDate >= startDate
-  const requested = validDates ? leaveDays(startDate, endDate) : 0
+  // Company holidays are not leave days (D-088).
+  const holidays = new Set((settings.data?.holidays ?? []).map((h) => h.date))
+  const requested = validDates ? leaveDays(startDate, endDate, holidays) : 0
   const balance = leaveType && balances.data ? balanceOf(balances.data, leaveType) : null
   const overBalance = balance !== null && requested > balance.remaining
 
   const submit = form.handleSubmit(async (input) => {
-    if (balance && input.requestedDays > balance.remaining) {
+    if (balance && leaveDays(input.startDate, input.endDate, holidays) > balance.remaining) {
       form.setError('leaveType', {
         message: `Only ${days(balance.remaining)} of ${LEAVE_TYPE_LABELS[input.leaveType]} leave remain.`,
       })
@@ -81,6 +85,7 @@ export function ApplyLeavePage() {
     try {
       const created = await submitLeave.mutateAsync({
         ...input,
+        requestedDays: leaveDays(input.startDate, input.endDate, holidays),
         managerIds: route.data?.routedTo === 'managers' ? selected : [],
       })
       toast.success('Leave request submitted. HR has been notified.')
