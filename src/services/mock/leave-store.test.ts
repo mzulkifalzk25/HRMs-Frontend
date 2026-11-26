@@ -13,6 +13,7 @@ import type { ApiError } from '@/services/api'
 import { createHrStore } from './hr-store'
 import { createLeaveStore, type LeaveStore, type MockLeaveApplication } from './leave-store'
 import { setMockViewer } from './mock-session'
+import { createNotificationStore, type NotificationStore } from './notification-store'
 
 const ACCOUNTS: Record<Role, string> = {
   hr_admin: 'u-hr-001',
@@ -28,9 +29,13 @@ const asPerson = (id: string, role: Role) => setMockViewer({ id, role })
 // Wednesday 25 Nov 2026, 11:00 PKT.
 let nowIso = '2026-11-25T06:00:00Z'
 let store: LeaveStore
+let inbox: NotificationStore
 beforeEach(() => {
   nowIso = '2026-11-25T06:00:00Z'
-  store = createLeaveStore({ hr: createHrStore(), now: () => new Date(nowIso) })
+  const hr = createHrStore()
+  const now = () => new Date(nowIso)
+  inbox = createNotificationStore({ hr, now })
+  store = createLeaveStore({ hr, now, notifications: inbox })
   setMockViewer(null)
 })
 
@@ -441,5 +446,56 @@ describe('scope and HR allocation (D-044, D-062)', () => {
         }),
       ).fieldErrors?.reason,
     ).toBeDefined()
+  })
+})
+
+describe('lifecycle notifications (P6-T05, P6-T06, D-064)', () => {
+  const titles = (role: Role) => {
+    as(role)
+    return inbox.list({ page: 1, pageSize: 100 }).results.map((n) => n.title)
+  }
+
+  it('submission asks the manager to decide, reviewers to review, and tells HR', () => {
+    as('employee')
+    const r = store.submit(application())
+    expect(titles('manager')).toContain('Decision needed: Ali Demo’s Casual leave')
+    expect(titles('team_lead')).toContain('Review requested: Ali Demo’s Casual leave')
+    expect(titles('hr_admin')).toContain('Ali Demo requested Casual leave')
+    as('manager')
+    const n = inbox.list({ page: 1, pageSize: 100 }).results.find((x) => x.link?.endsWith(r.id))
+    expect(n).toMatchObject({ type: 'approval_required', read: false, actorName: 'Ali Demo' })
+  })
+
+  it('a decision reaches the requester and HR, with the reason', () => {
+    as('employee')
+    const r = store.submit(application())
+    as('manager')
+    store.act(r.id, { action: 'decline', comment: 'Release week', version: r.version })
+    as('employee')
+    const declined = inbox.list({ page: 1, pageSize: 100, type: 'leave_declined' }).results[0]
+    expect(declined).toMatchObject({ title: 'Your Casual leave was declined' })
+    expect(declined?.body).toContain('“Release week”')
+    expect(titles('hr_admin')).toContain('Ali Demo’s Casual leave was declined')
+    expect(titles('manager')).not.toContain('Ali Demo’s Casual leave was declined') // the actor
+  })
+
+  it('recommendations and comments do not notify; cancellation tells HR and the approvers', () => {
+    as('employee')
+    const r = store.submit(application())
+    as('team_lead')
+    store.act(r.id, { action: 'recommend_approve', comment: null, version: r.version })
+    expect(titles('employee').some((t) => /recommend|review/i.test(t))).toBe(false)
+    as('employee')
+    store.cancel(r.id, { reason: null, version: store.get(r.id).version })
+    expect(titles('hr_admin')).toContain('Ali Demo cancelled Casual leave')
+    expect(titles('manager')).toContain('Ali Demo cancelled Casual leave')
+  })
+
+  it('seeded history arrives as read; recent events are unread', () => {
+    as('employee')
+    const mine = inbox.list({ page: 1, pageSize: 100 }).results
+    expect(mine.find((n) => n.title === 'Your Casual leave was approved')?.read).toBe(true)
+    as('manager')
+    expect(inbox.unreadCount()).toBeGreaterThan(0)
   })
 })

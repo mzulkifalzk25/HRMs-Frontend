@@ -38,12 +38,25 @@ import type {
   Participant,
   RoutePreview,
 } from '@/features/leave/schemas/leave.schema'
-import { appDateKey, appWallClockToInstant, shiftDateKey, toAppIsoString } from '@/lib/datetime'
+import { leaveMessage } from '@/features/notifications/lib/leave-messages'
+import {
+  leaveEventRecipients,
+  type LeaveEvent,
+} from '@/features/notifications/lib/leave-recipients'
+import { notificationLink } from '@/features/notifications/lib/notification-types'
+import {
+  appDateKey,
+  appWallClockToInstant,
+  formatDateKey,
+  shiftDateKey,
+  toAppIsoString,
+} from '@/lib/datetime'
 import { ApiError } from '@/services/api'
 import type { Page } from '@/types/api'
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES, ANNUAL_LEAVE_ALLOWANCE, type LeaveType } from '@/types/hr'
 import { mockHrStore, type HrStore } from './hr-store'
 import { getMockViewer } from './mock-session'
+import { mockNotificationStore, type NotificationStore } from './notification-store'
 
 type Attachment = LeaveRequest['attachment']
 
@@ -111,9 +124,12 @@ const REASONS: Record<LeaveType, string> = {
   annual: 'Family trip planned in advance.',
 }
 
-export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {}) {
+export function createLeaveStore(
+  options: { hr?: HrStore; now?: () => Date; notifications?: NotificationStore } = {},
+) {
   const hr = options.hr ?? mockHrStore
   const now = options.now ?? (() => new Date())
+  const notifications = options.notifications ?? mockNotificationStore
   let requests: StoredRequest[] = []
   let ledger: LedgerEntry[] = []
   let counter = 0
@@ -259,6 +275,66 @@ export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {
     }
   }
 
+  /**
+   * Leave lifecycle notifications (P6-T05, P6-T06, D-064): HR always, approvers on submission,
+   * the requester on decisions. Seeded events older than a day arrive already read.
+   */
+  function emit(
+    event: LeaveEvent,
+    r: StoredRequest,
+    actorId: string,
+    at: string,
+    extra: { wasPending?: boolean; comment?: string | null } = {},
+  ) {
+    const people = org().people
+    const assignees = (kind: 'decision' | 'review') =>
+      r.steps.filter((s) => s.kind === kind).flatMap((s) => s.assigneeIds)
+    const recipients = leaveEventRecipients(event, {
+      requesterId: r.employeeId,
+      deciderIds: assignees('decision'),
+      reviewerIds: assignees('review'),
+      hrIds: people.filter((p) => p.role === 'hr_admin' && p.status === 'active').map((p) => p.id),
+      actorId,
+      wasPending: extra.wasPending,
+    })
+    const range =
+      r.startDate === r.endDate
+        ? formatDateKey(r.startDate)
+        : `${formatDateKey(r.startDate)} – ${formatDateKey(r.endDate)}`
+    const period = `${range} (${r.requestedDays} ${r.requestedDays === 1 ? 'day' : 'days'})`
+    const read = new Date(at).getTime() < now().getTime() - 86_400_000
+    for (const recipient of recipients) {
+      notifications.notify({
+        recipientId: recipient.employeeId,
+        type: recipient.type,
+        ...leaveMessage(recipient, {
+          employeeName: r.employeeName,
+          leaveTypeLabel: LEAVE_TYPE_LABELS[r.leaveType],
+          period,
+          forRequester: recipient.employeeId === r.employeeId,
+          comment: extra.comment,
+        }),
+        link: notificationLink({ kind: 'leave_request', id: r.id }),
+        actorName: nameOf(actorId),
+        at,
+        read,
+      })
+    }
+  }
+
+  /** Notifies a final decision once (approve/decline, incl. HR overrides). */
+  function emitDecision(
+    r: StoredRequest,
+    before: string,
+    actorId: string,
+    at: string,
+    comment: string | null,
+  ) {
+    const after = statusOf(r)
+    if (before === after || (after !== 'approved' && after !== 'declined')) return
+    emit(after === 'approved' ? 'approved' : 'declined', r, actorId, at, { comment })
+  }
+
   function create(
     requesterId: string,
     input: MockLeaveApplication,
@@ -286,6 +362,7 @@ export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {
       actions: [],
     }
     requests.push(request)
+    emit('submitted', request, requesterId, submittedAt)
     return request
   }
 
@@ -395,6 +472,7 @@ export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {
       const actionAt = at(shiftDateKey(submittedDay, 1), '11:30')
       addAction(request, actorId, kind, note ?? null, actionAt)
       settle(request, before, nameOf(actorId), actionAt)
+      emitDecision(request, before, actorId, actionAt, note ?? null)
     }
   }
   seed()
@@ -668,6 +746,7 @@ export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {
       const nowIso = toAppIsoString(now())
       addAction(r, v.id, input.action, comment, nowIso)
       settle(r, before, nameOf(v.id), nowIso)
+      emitDecision(r, before, v.id, nowIso, comment)
       return toDetail(r, v)
     },
 
@@ -687,6 +766,7 @@ export function createLeaveStore(options: { hr?: HrStore; now?: () => Date } = {
       const nowIso = toAppIsoString(now())
       addAction(r, v.id, 'cancel', input.reason?.trim() || null, nowIso)
       settle(r, before, nameOf(v.id), nowIso)
+      emit('cancelled', r, v.id, nowIso, { wasPending: before !== 'approved' })
       return toDetail(r, v)
     },
 
