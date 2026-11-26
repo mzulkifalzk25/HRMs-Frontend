@@ -1,5 +1,7 @@
 // List components shared by the role dashboards. Lists (not wide tables) stay usable on mobile.
 import { ClipboardCheck, History, Users } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 import { EmptyState } from '@/components/feedback/empty-state'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { UserAvatar } from '@/components/shared/user-avatar'
@@ -26,6 +28,17 @@ function nameInitials(name: string): string {
     .join('')
     .slice(0, 2)
     .toUpperCase()
+}
+
+/** Wraps a row title in a link to the request when `linkTo` is given. */
+function maybeLink(id: string, linkTo: ((id: string) => string) | undefined, children: ReactNode) {
+  return linkTo ? (
+    <Link to={linkTo(id)} className="hover:underline underline-offset-4">
+      {children}
+    </Link>
+  ) : (
+    children
+  )
 }
 
 function days(value: number): string {
@@ -64,9 +77,11 @@ export function TeamMemberList({ members }: { members: TeamMember[] }) {
 export function ApprovalTaskList({
   tasks,
   emptyText,
+  linkTo,
 }: {
   tasks: ApprovalTask[]
   emptyText: string
+  linkTo?: (id: string) => string
 }) {
   if (tasks.length === 0) {
     return (
@@ -87,7 +102,11 @@ export function ApprovalTaskList({
         >
           <div className="min-w-0">
             <p className="text-sm font-medium">
-              {task.employeeName} · {LEAVE_TYPE_LABELS[task.leaveType]} leave
+              {maybeLink(
+                task.id,
+                linkTo,
+                `${task.employeeName} · ${LEAVE_TYPE_LABELS[task.leaveType]} leave`,
+              )}
             </p>
             <p className="text-xs text-muted-foreground">
               {dateRange(task.startDate, task.endDate)} · {days(task.requestedDays)} · submitted{' '}
@@ -107,10 +126,12 @@ export function LeaveRequestList({
   requests,
   showEmployee = true,
   emptyText,
+  linkTo,
 }: {
   requests: LeaveRequestSummary[]
   showEmployee?: boolean
   emptyText: string
+  linkTo?: (id: string) => string
 }) {
   if (requests.length === 0) {
     return <EmptyState title="No leave requests" description={emptyText} className="py-8" />
@@ -124,8 +145,11 @@ export function LeaveRequestList({
         >
           <div className="min-w-0">
             <p className="text-sm font-medium">
-              {showEmployee ? `${request.employeeName} · ` : ''}
-              {LEAVE_TYPE_LABELS[request.leaveType]} leave
+              {maybeLink(
+                request.id,
+                linkTo,
+                `${showEmployee ? `${request.employeeName} · ` : ''}${LEAVE_TYPE_LABELS[request.leaveType]} leave`,
+              )}
             </p>
             <p className="text-xs text-muted-foreground">
               {dateRange(request.startDate, request.endDate)} · {days(request.requestedDays)}

@@ -1,11 +1,12 @@
 // Every role dashboard renders loading, empty, error and loaded states (P2 required tests).
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentType } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@/features/authentication'
 import { ApiError } from '@/services/api'
 import { setMockViewer } from '@/services/mock/mock-session'
+import { MemoryRouter } from 'react-router'
 import { renderWithProviders, withSignedInUser } from '@/test/render'
 import type { DashboardService } from '../api/dashboard.service'
 import {
@@ -110,7 +111,7 @@ const CASES: Case[] = [
     method: 'getManagerDashboard',
     empty: EMPTY.manager,
     loadedText: 'Hina T.',
-    emptyTexts: ['Nothing waiting for you', 'No leave requests', 'No team members'],
+    emptyTexts: ['No team members'],
   },
   {
     name: 'Senior PM',
@@ -118,7 +119,7 @@ const CASES: Case[] = [
     method: 'getSeniorPmDashboard',
     empty: EMPTY.seniorPm,
     loadedText: 'Payroll Portal Revamp',
-    emptyTexts: ['No project teams', 'Nothing waiting for you'],
+    emptyTexts: ['No project teams'],
   },
   {
     name: 'Associate PM',
@@ -126,7 +127,7 @@ const CASES: Case[] = [
     method: 'getAssociatePmDashboard',
     empty: EMPTY.associatePm,
     loadedText: 'Review and recommendation tasks',
-    emptyTexts: ['Nothing waiting for you', 'No team members'],
+    emptyTexts: ['No team members'],
   },
   {
     name: 'Team Lead',
@@ -134,7 +135,7 @@ const CASES: Case[] = [
     method: 'getTeamLeadDashboard',
     empty: EMPTY.teamLead,
     loadedText: 'Leave reviews',
-    emptyTexts: ['Nothing waiting for you', 'No team members'],
+    emptyTexts: ['No team members'],
   },
   {
     name: 'Employee',
@@ -142,12 +143,7 @@ const CASES: Case[] = [
     method: 'getEmployeeDashboard',
     empty: EMPTY.employee,
     loadedText: 'Medical/Sick',
-    emptyTexts: [
-      'No leave allocation yet',
-      'No leave requests',
-      'No notifications',
-      'No recent activity',
-    ],
+    emptyTexts: ['No notifications', 'No recent activity'],
   },
 ]
 
@@ -159,7 +155,14 @@ function serviceReturning(
 }
 
 function renderPage(Page: Case['Page'], service: DashboardService) {
-  return renderWithProviders(withSignedInUser(user, <Page service={service} />))
+  return renderWithProviders(
+    withSignedInUser(
+      user,
+      <MemoryRouter>
+        <Page service={service} />
+      </MemoryRouter>,
+    ),
+  )
 }
 
 // Live attendance panels call the attendance service as a signed-in manager (mock viewer).
@@ -227,6 +230,15 @@ describe('dashboard details', () => {
     expect(await screen.findByRole('button', { name: 'Check in' })).toBeEnabled()
     expect(screen.getByText('Pakistan time (Asia/Karachi)')).toBeInTheDocument()
     expect(screen.getAllByText(/days left/)).toHaveLength(3)
+  })
+
+  it('leave panels come from the leave service (Phase 5), linking to each request', async () => {
+    renderPage(ManagerDashboardPage, real)
+    const inbox = await screen.findByRole('region', { name: 'Approval inbox' })
+    const link = await within(inbox).findByRole('link', { name: /Hamza Kareem · Annual leave/ })
+    expect(link.getAttribute('href')).toMatch(/^\/leave\/requests\//)
+    const team = screen.getByRole('region', { name: 'Team leave requests' })
+    expect(await within(team).findByText(/Mariam Siddiq · Annual leave/)).toBeInTheDocument()
   })
 
   it('team dashboards show live attendance for the scope, not static numbers', async () => {

@@ -4,7 +4,8 @@ import type { DashboardService } from '../api/dashboard.service'
 import { useManagerDashboard } from '../api/use-dashboards'
 import { LiveTeamAttendance } from '../components/live-team-attendance'
 import { DashboardHeader } from '../components/dashboard-header'
-import { ApprovalTaskList, LeaveRequestList, TeamMemberList } from '../components/dashboard-lists'
+import { TeamMemberList } from '../components/dashboard-lists'
+import { LiveApprovalTasks, LiveTeamLeave } from '../components/live-leave'
 import { DashboardQueryView } from '../components/dashboard-query-view'
 
 export function ManagerDashboardPage({ service }: { service?: DashboardService }) {
@@ -23,16 +24,10 @@ export function ManagerDashboardPage({ service }: { service?: DashboardService }
                 title="Approval inbox"
                 description="Leave requests waiting for your decision"
               >
-                <ApprovalTaskList
-                  tasks={data.approvalInbox}
-                  emptyText="No leave requests need your approval."
-                />
+                <LiveApprovalTasks emptyText="No leave requests need your approval." />
               </SectionCard>
               <SectionCard title="Team leave requests" description="Recent requests from your team">
-                <LeaveRequestList
-                  requests={data.teamLeaveRequests}
-                  emptyText="Your team has not requested leave recently."
-                />
+                <LiveTeamLeave emptyText="Your team has not requested leave recently." />
               </SectionCard>
             </div>
             <SectionCard title="Team overview" description={`${data.team.length} people`}>

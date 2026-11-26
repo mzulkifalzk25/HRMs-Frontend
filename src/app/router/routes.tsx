@@ -84,6 +84,32 @@ const ATTENDANCE_PAGES = {
     (m) => m.AttendanceRecordsPage,
   ),
 }
+const LEAVE_PAGES = {
+  mine: lazyPage(
+    () => import('@/features/leave/pages/my-leave-page'),
+    (m) => m.MyLeavePage,
+  ),
+  apply: lazyPage(
+    () => import('@/features/leave/pages/apply-leave-page'),
+    (m) => m.ApplyLeavePage,
+  ),
+  request: lazyPage(
+    () => import('@/features/leave/pages/leave-request-page'),
+    (m) => m.LeaveRequestPage,
+  ),
+  approvals: lazyPage(
+    () => import('@/features/leave/pages/approvals-page'),
+    (m) => m.ApprovalsPage,
+  ),
+  records: lazyPage(
+    () => import('@/features/leave/pages/leave-records-page'),
+    (m) => m.LeaveRecordsPage,
+  ),
+  balances: lazyPage(
+    () => import('@/features/leave/pages/leave-balances-page'),
+    (m) => m.LeaveBalancesPage,
+  ),
+}
 const ORGANIZATION_PAGES = {
   manage: lazyPage(
     () => import('@/features/organization/pages/organization-page'),
@@ -104,7 +130,7 @@ export const DIRECTORY_ROLES: readonly Role[] = [
   'team_lead',
 ]
 
-/** Phase 3 routes (UX guards only; the API enforces scope and HR-only changes, D-027). */
+/** Phase 3–5 routes (UX guards only; the API enforces scope and HR-only changes, D-027). */
 function employeeAndOrganizationRoutes(): RouteObject[] {
   return [
     {
@@ -140,6 +166,25 @@ function employeeAndOrganizationRoutes(): RouteObject[] {
         {
           element: <RequireRole allow={DIRECTORY_ROLES} />,
           children: [{ path: 'records', lazy: ATTENDANCE_PAGES.records, handle: crumb('Records') }],
+        },
+      ],
+    },
+    {
+      // Phase 5. Approvals is open to everyone: any person with reports can be asked to decide.
+      path: 'leave',
+      handle: crumb('Leave'),
+      children: [
+        { index: true, lazy: LEAVE_PAGES.mine },
+        { path: 'apply', lazy: LEAVE_PAGES.apply, handle: crumb('Apply') },
+        { path: 'requests/:requestId', lazy: LEAVE_PAGES.request, handle: crumb('Request') },
+        { path: 'approvals', lazy: LEAVE_PAGES.approvals, handle: crumb('Approvals') },
+        {
+          element: <RequireRole allow={DIRECTORY_ROLES} />,
+          children: [{ path: 'records', lazy: LEAVE_PAGES.records, handle: crumb('Records') }],
+        },
+        {
+          element: <RequireRole allow={['hr_admin']} />,
+          children: [{ path: 'balances', lazy: LEAVE_PAGES.balances, handle: crumb('Balances') }],
         },
       ],
     },
