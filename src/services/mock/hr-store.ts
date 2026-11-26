@@ -583,6 +583,29 @@ export function createHrStore() {
       }))
     },
 
+    /** What imports match against (P7, mock backend only). */
+    importLookups() {
+      return {
+        employees: employees.map((e) => ({
+          id: e.id,
+          name: fullName(e),
+          email: e.email.toLowerCase(),
+          code: e.employeeCode,
+          status: e.status,
+          phone: e.phone,
+          departmentId: e.departmentId,
+          designationId: e.designationId,
+        })),
+        departments: departments.map((d) => ({
+          id: d.id,
+          name: d.name,
+          code: d.code,
+          status: d.status,
+        })),
+        designations: designations.map((d) => ({ id: d.id, title: d.title, status: d.status })),
+      }
+    },
+
     /** Department and team names for labels (no viewer needed; names are not private). */
     orgUnits(): {
       departments: Array<{ id: string; name: string; status: RecordStatus }>
