@@ -15,7 +15,7 @@ Do not rely on conversation history. These three files are the source of truth:
 
 ## 1. Non-negotiable rules
 
-1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session** — the one standing exception is the phase workflow in §9 (D-083, D-092: small commits pushed one by one). Never merge pull requests, never push to `main` or `dev-main` directly. Never change global Git config or credentials.
+1. **Git safety.** Work only in this repository. Never create another repository, re-initialize Git, reset, clean, rebase, amend, rewrite history or force push. **Never commit or push unless the user explicitly asks in the current session** (D-095: the earlier standing authorization for phase commits/pushes is withdrawn; always ask first). Never merge pull requests, never push to `main` or `dev-main` directly. Never change global Git config or credentials.
 2. **Data safety.** Inspect a file before changing it. Do not delete or overwrite files, configuration or documentation without explaining why and getting permission. Preserve `.gitignore`, `README.md` and `.vscode/` (local, ignored).
 3. **Secrets.** Never read, create, modify or print `.env` files containing secrets. Only `.env.example` with placeholder values is committed. No tokens, passwords or real personal data in code, mocks, logs or docs.
 4. **No invented business rules.** If a rule is not a confirmed decision in `docs/DECISIONS.md`, do not implement it as a guess. Isolate the behavior, mark the task `BLOCKED by Q-…`, and ask the user.
@@ -23,6 +23,10 @@ Do not rely on conversation history. These three files are the source of truth:
 6. **Security boundary.** Frontend guards and role-based UI are UX only. The backend is authoritative for authentication, authorization and business rules (D-027).
 7. **No deploy or publish**, and no new cloud services, Lovable projects or paid operations without explicit approval (D-005, D-073).
 8. **Package manager is pnpm** (D-010). Do not create npm or yarn lockfiles. Do not add dependencies that the plan doesn't call for, and record any new dependency in `docs/DECISIONS.md`.
+
+## 1a. Current strategy: feature-first (D-095)
+
+Finish all main HRMS features first (Phases 7–8), then polish. Priorities: (1) complete major features, (2) connected main workflows, (3) basic verification, (4) defer refinements. Per module: typecheck, lint, focused tests for important business logic (time calculations, balances, approval authority, self-approval, access restrictions, import duplicate protection, audit integrity), primary workflow check, build at milestones. Deferred work is listed in plan section H. Work in coherent batches, reuse existing patterns, keep docs and reports short, ask only when a business decision blocks. Never write careless or insecure code.
 
 ## 2. Session start protocol
 
@@ -142,7 +146,7 @@ chore: add prettier config and format scripts to the project
 
 1. **Start a phase:** update local `dev-main` from GitHub (`git fetch origin` then `git switch dev-main` and `git pull --ff-only`), then create the phase branch from it: `git switch -c phase-<n>-<short-name>`.
 2. **Publish right away:** `git push -u origin phase-<n>-<short-name>`.
-3. **During the phase: small commits, pushed one by one (D-092).** Commit after each small task and push right away. Aim for **20–30 commits per phase**.
+3. **During the phase: small commits (D-092), only after the user approves (D-095).** Prepare small, single-purpose commits; commit and push only when the user says so.
    - **One commit = one small, self-contained step** that leaves the branch working, for example: a pure rule with its tests; a schema/contract; the HTTP implementation; the mock backend with its tests; one component; one page with its route and nav entry; a dashboard integration; one docs update. Never mix types (§8).
    - **Before each commit:** `pnpm typecheck && pnpm lint && pnpm format:check` plus the tests of the touched area (`pnpm exec vitest run <paths>`). Then `git push`.
    - **At the end of the phase** (and before opening the PR): the full §7 checks, including the whole test suite, the timezone runs and `pnpm build`; fixes found there are their own small commits.
