@@ -95,6 +95,7 @@ function useRefresh() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: leaveKeys.all }),
       queryClient.invalidateQueries({ queryKey: ['attendance', 'summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['notifications'] }),
     ])
 }
 

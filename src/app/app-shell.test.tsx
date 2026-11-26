@@ -39,6 +39,8 @@ describe('app shell (signed in)', () => {
       'Approvals',
       'Leave records',
       'Org chart',
+      'Announcements',
+      'Notifications',
       'My profile',
     ])
     expect(within(nav).queryByText('Organization')).not.toBeInTheDocument()

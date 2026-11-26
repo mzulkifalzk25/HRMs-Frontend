@@ -143,7 +143,7 @@ const CASES: Case[] = [
     method: 'getEmployeeDashboard',
     empty: EMPTY.employee,
     loadedText: 'Medical/Sick',
-    emptyTexts: ['No notifications', 'No recent activity'],
+    emptyTexts: ['No recent activity'],
   },
 ]
 
@@ -239,6 +239,17 @@ describe('dashboard details', () => {
     expect(link.getAttribute('href')).toMatch(/^\/leave\/requests\//)
     const team = screen.getByRole('region', { name: 'Team leave requests' })
     expect(await within(team).findByText(/Mariam Siddiq · Annual leave/)).toBeInTheDocument()
+  })
+
+  it('Employee dashboard notifications come from the notification service (Phase 6)', async () => {
+    renderPage(EmployeeDashboardPage, real)
+    const panel = await screen.findByRole('region', { name: 'Notifications' })
+    // The signed-in mock viewer is the manager: their newest items are leave requests to decide.
+    expect((await within(panel).findAllByText(/^Decision needed:/)).length).toBeGreaterThan(0)
+    expect(within(panel).getByRole('link', { name: 'View all' })).toHaveAttribute(
+      'href',
+      '/notifications',
+    )
   })
 
   it('team dashboards show live attendance for the scope, not static numbers', async () => {

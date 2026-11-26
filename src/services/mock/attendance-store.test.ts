@@ -205,3 +205,32 @@ describe('summary', () => {
     expect(store.summary()).toMatchObject({ total: 1, present: 1 })
   })
 })
+
+describe('attendance reminders (P6-T07, D-093)', () => {
+  it('reminds demo accounts who have not checked in after 9:15, and stops once they do', () => {
+    nowIso = '2026-11-25T04:14:00Z' // 09:14 PKT
+    as('employee')
+    expect(store.remindersFor('u-emp-001')).toEqual([])
+    nowIso = '2026-11-25T04:20:00Z' // 09:20 PKT
+    expect(store.remindersFor('u-emp-001').map((r) => r.kind)).toContain('no_check_in')
+    store.checkIn()
+    expect(store.remindersFor('u-emp-001').map((r) => r.kind)).not.toContain('no_check_in')
+  })
+
+  it('reminds about a missing check-out the next morning', () => {
+    nowIso = '2026-11-25T05:00:00Z'
+    as('hr_admin')
+    const open = store.list({
+      from: '2026-11-18',
+      to: '2026-11-24',
+      page: 1,
+      pageSize: 1000,
+      filter: 'incomplete',
+    }).results[0]
+    if (!open) return // seed may have no forgotten check-out in this window
+    const kinds = store.remindersFor(open.employeeId)
+    expect(kinds).toContainEqual(
+      expect.objectContaining({ kind: 'missing_check_out', date: open.date }),
+    )
+  })
+})

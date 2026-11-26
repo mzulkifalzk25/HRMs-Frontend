@@ -26,6 +26,18 @@ import type { OrganizationService } from '@/features/organization/api/organizati
 import { createHttpApprovalService, createHttpLeaveService } from '@/features/leave/api/leave.http'
 import { createMockApprovalService, createMockLeaveService } from '@/features/leave/api/leave.mock'
 import type { ApprovalService, LeaveService } from '@/features/leave/api/leave.service'
+import {
+  createHttpAnnouncementService,
+  createHttpNotificationService,
+} from '@/features/notifications/api/notification.http'
+import {
+  createMockAnnouncementService,
+  createMockNotificationService,
+} from '@/features/notifications/api/notification.mock'
+import type {
+  AnnouncementService,
+  NotificationService,
+} from '@/features/notifications/api/notification.service'
 import { env } from '@/lib/env'
 import { apiClient, type HttpClient } from '@/services/api'
 import { createHttpHealthService } from '@/services/health/health.http'
@@ -55,6 +67,8 @@ export type Services = {
   attendance: AttendanceService
   leave: LeaveService
   approvals: ApprovalService
+  notifications: NotificationService
+  announcements: AnnouncementService
 }
 
 export function createServices(options: {
@@ -92,6 +106,8 @@ export function createServices(options: {
       attendance: createMockAttendanceService({ latencyMs }),
       leave: createMockLeaveService({ latencyMs }),
       approvals: createMockApprovalService({ latencyMs }),
+      notifications: createMockNotificationService({ latencyMs }),
+      announcements: createMockAnnouncementService({ latencyMs }),
     }
   }
   return {
@@ -105,6 +121,8 @@ export function createServices(options: {
     attendance: createHttpAttendanceService(options.client),
     leave: createHttpLeaveService(options.client),
     approvals: createHttpApprovalService(options.client),
+    notifications: createHttpNotificationService(options.client),
+    announcements: createHttpAnnouncementService(options.client),
   }
 }
 

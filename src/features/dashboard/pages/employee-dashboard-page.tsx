@@ -1,5 +1,6 @@
 // Employee dashboard (P2-T18): own records only (D-044).
 import { CalendarDays, Clock, UserCheck } from 'lucide-react'
+import { Link } from 'react-router'
 import { SectionCard } from '@/components/shared/section-card'
 import { StatCard } from '@/components/shared/stat-card'
 import type { DashboardService } from '../api/dashboard.service'
@@ -9,7 +10,7 @@ import { ActivityList } from '../components/dashboard-lists'
 import { LiveLeaveBalances, LiveMyLeave } from '../components/live-leave'
 import { DashboardQueryView } from '../components/dashboard-query-view'
 import { CheckInCard } from '@/features/attendance'
-import { NotificationPreviewList } from '../components/dashboard-widgets'
+import { LiveNotifications } from '../components/live-notifications'
 
 export function EmployeeDashboardPage({ service }: { service?: DashboardService }) {
   const query = useEmployeeDashboard(service)
@@ -56,8 +57,15 @@ export function EmployeeDashboardPage({ service }: { service?: DashboardService 
               <SectionCard title="Recent leave requests">
                 <LiveMyLeave />
               </SectionCard>
-              <SectionCard title="Notifications">
-                <NotificationPreviewList notifications={data.notifications} />
+              <SectionCard
+                title="Notifications"
+                actions={
+                  <Link to="/notifications" className="text-xs text-primary hover:underline">
+                    View all
+                  </Link>
+                }
+              >
+                <LiveNotifications />
               </SectionCard>
             </div>
             <SectionCard title="My activity" description="Today">

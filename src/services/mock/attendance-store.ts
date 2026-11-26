@@ -17,6 +17,7 @@ import type {
   CorrectionInput,
   TodayAttendance,
 } from '@/features/attendance/schemas/attendance.schema'
+import { remindersDue, type DueReminder } from '@/features/notifications/lib/reminder-rules'
 import { CORRECTION_REASON_MIN_LENGTH } from '@/features/attendance/schemas/attendance.schema'
 import {
   appDateKey,
@@ -29,6 +30,7 @@ import { ApiError } from '@/services/api'
 import type { Page } from '@/types/api'
 import { mockHrStore, type HrStore } from './hr-store'
 import { mockLeaveStore } from './leave-store'
+import { mockNotificationStore } from './notification-store'
 import { getMockViewer } from './mock-session'
 
 const HISTORY_DAYS = 30
@@ -148,6 +150,21 @@ export function createAttendanceStore(
 
   return {
     reset: seed,
+
+    /** Reminders due now for one person (D-093), delivered by the notification backend. */
+    remindersFor(employeeId: string): DueReminder[] {
+      const person = personOf(employeeId)
+      if (!person) return []
+      const today = todayKey()
+      return remindersDue({
+        now: now(),
+        today,
+        active: person.status === 'active',
+        checkedInToday: records.has(`att-${employeeId}-${today}`),
+        onLeaveToday: leave.isOnLeave(employeeId, today),
+        records: [...records.values()].filter((r) => r.employeeId === employeeId),
+      })
+    },
 
     today(): TodayAttendance {
       const v = viewer()
@@ -320,3 +337,8 @@ export function createAttendanceStore(
 export type AttendanceStore = ReturnType<typeof createAttendanceStore>
 
 export const mockAttendanceStore = createAttendanceStore()
+
+// Attendance reminders reach people through the notification backend (P6-T07).
+mockNotificationStore.setReminderSource((employeeId) =>
+  mockAttendanceStore.remindersFor(employeeId),
+)

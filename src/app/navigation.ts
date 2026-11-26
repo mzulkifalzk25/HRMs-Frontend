@@ -7,7 +7,9 @@ import {
   CalendarRange,
   ClipboardList,
   Clock,
+  Bell,
   ListChecks,
+  Megaphone,
   Scale,
   LayoutDashboard,
   Network,
@@ -67,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ['hr_admin', 'manager', 'senior_pm', 'associate_pm', 'team_lead'],
       },
       { label: 'Org chart', icon: Network, to: '/organization/chart', roles: ROLES },
+      { label: 'Announcements', icon: Megaphone, to: '/announcements', roles: ROLES },
     ],
   },
   {
@@ -84,7 +87,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Account',
-    items: [{ label: 'My profile', icon: UserRound, to: '/profile', roles: ROLES, end: true }],
+    items: [
+      { label: 'Notifications', icon: Bell, to: '/notifications', roles: ROLES },
+      { label: 'My profile', icon: UserRound, to: '/profile', roles: ROLES, end: true },
+    ],
   },
 ]
 
