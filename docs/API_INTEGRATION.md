@@ -329,6 +329,57 @@ Request detail (`GET leave/requests/{id}/` and the response of every write):
 
 Backend notes for the user's own implementation (D-080, D-069): decide, deduct and append the ledger in one transaction with `select_for_update` on the request and the balance; unique constraint on (`request`, `kind`) for deductions and reversals; the request status as a state machine; `version` as an optimistic-concurrency check; idempotency keys for submissions are recommended.
 
+### Notifications and announcements (Phase 6)
+
+**In-app only** (D-093): no email channel. The backend creates notifications from events and resolves recipients server-side; the app lists them, marks them read and edits preferences. Unread count is polled every 60 s and on window focus (D-094); no WebSocket is needed.
+
+Notification:
+
+```json
+{
+  "id": "ntf-118",
+  "type": "approval_required",
+  "title": "Decision needed: Hamza Kareem’s Annual leave",
+  "body": "2 Dec 2026 – 4 Dec 2026 (3 days).",
+  "link": "/leave/requests/lr-41",
+  "actor_name": "Hamza Kareem",
+  "created_at": "2026-11-25T10:15:00.000+05:00",
+  "read": false
+}
+```
+
+`type` ∈ `leave_submitted`, `approval_required`, `leave_approved`, `leave_declined`, `leave_cancelled`, `attendance_reminder`, `announcement`. `link` is an in-app path (`/leave/requests/{id}`, `/attendance`, `/announcements#{id}`) or null.
+
+Events and recipients (D-064, D-089, D-093; the actor is never notified of their own action, one notification per person and event):
+
+| Event | Recipients |
+|---|---|
+| Leave submitted | Decision-makers: `approval_required` (decide); optional reviewers: `approval_required` (review); HR Administrators: `leave_submitted` |
+| Leave approved / declined (incl. HR override) | Requester and HR: `leave_approved` / `leave_declined` (decline reason in `body`) |
+| Leave cancelled | HR; plus decision-makers and reviewers when it was still pending: `leave_cancelled` |
+| Recommendation, comment | none |
+| No check-in by 9:15 AM on a working day (not on approved leave) | the person: `attendance_reminder`, once per day |
+| Missing check-out | the person, the next morning (9:00 AM, last 7 days): `attendance_reminder`, once per day |
+| Announcement published | everyone in the audience (active people), except the author: `announcement` |
+
+Muted types (`attendance_reminder`, `announcement`) are not delivered; leave and approval types cannot be muted.
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `GET notifications/?page=&page_size=&type=&status=&from=&to=` | everyone | Own notifications, newest first; `status` ∈ `read`, `unread`; `from`/`to` are Pakistan dates of `created_at`. DRF page (§5) |
+| `GET notifications/unread-count/` | everyone | `{ "count": 3 }` |
+| `POST notifications/{id}/read/` | recipient | Returns the notification; `404` for someone else's |
+| `POST notifications/read-all/` | everyone | `{ "updated": 3 }` |
+| `GET notifications/preferences/` | everyone | `{ "muted": ["attendance_reminder"] }` |
+| `PUT notifications/preferences/` | everyone | Same shape; `400` on `muted` for types that cannot be muted |
+| `GET announcements/?include_inactive=true` | everyone; `include_inactive` HR only (`403`) | Active announcements that reach the caller (HR: all active), newest first: `{ "id", "title", "body", "audience": { "kind", "ids" }, "audience_label", "author_name", "created_at", "expires_on", "archived" }` |
+| `POST announcements/` | HR only | `{ "title", "body", "audience": { "kind": "everyone" \| "departments" \| "teams", "ids": [] }, "expires_on": "2026-12-02" \| null }`. `400` on `title` (3–120), `body` (5–2000), `audience` (ids required for departments/teams, must be active), `expires_on` (not in the past) |
+| `POST announcements/{id}/archive/` | HR only | Returns the announcement with `archived: true` |
+
+An announcement is shown through its `expires_on` date (inclusive), or until archived when it has none.
+
+Backend notes for the user's own implementation (D-080): create notifications in the same transaction as the event (or from a reliable outbox); reminders from a scheduled job (for example Celery beat) at 9:15 AM and 9:00 AM Pakistan time, idempotent per person and date; index notifications on (`recipient`, `read`, `created_at`).
+
 ### Dashboards (P2-T12)
 
 Each `GET dashboard/<role>/` returns data **already scoped by the backend** to the signed-in user (own team, own records, D-044); a user calling another role's endpoint should get `403`. The exact response shapes are the Zod schemas in `src/features/dashboard/schemas/dashboard.schema.ts` (written in camelCase; the API sends snake_case, converted automatically). Example (`dashboard/team-lead/`):
@@ -354,4 +405,4 @@ Each `GET dashboard/<role>/` returns data **already scoped by the backend** to t
 
 Vocabulary shared with later phases (`src/types/hr.ts`): `leave_type` ∈ `medical_sick`, `casual`, `annual`; leave `status` ∈ `draft`, `pending`, `under_review`, `pending_final_approval`, `approved`, `declined`, `cancelled`; `today_status` ∈ `present`, `late`, `on_leave`, `not_checked_in`, `absent`; approval `stage` ∈ `review`, `recommendation`, `final_approval`. Attendance counts (Late-In, absent) are computed by the backend in `Asia/Karachi`; "absent" is provisional until Q-ATT-02 is answered.
 
-Further endpoints are added per phase: notifications (P6-T10), imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
+Further endpoints are added per phase: imports (P7-T13), reports/settings/audit (P8-T20). The complete endpoint ↔ service ↔ screen table is finished in P9-T13.
