@@ -2,7 +2,7 @@
 
 **FormbaxHR** is an enterprise HR management system (employees, attendance, leave and approvals, organization, imports, reports, notifications, audit) inspired by Zoho People in functionality, with its own design. This repository is the **frontend**. A separate Django 5.2 + Django REST Framework + PostgreSQL backend will be built later; until then the app runs on **mock services with fictional data**.
 
-> Status: **Phase 5 complete** (authentication, role dashboards, employees and organization, attendance, leave and approvals — all in mock mode). Next: notifications (Phase 6). Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+> Status: **Phase 6 complete** (authentication, role dashboards, employees and organization, attendance, leave and approvals, notifications and announcements — all in mock mode). Next: Excel imports (Phase 7). Progress: [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
 ## Technology
 
@@ -63,6 +63,7 @@ Before finishing a change: `pnpm typecheck && pnpm lint && pnpm format:check && 
 - **Mock HR data:** about 20 fictional employees, departments, teams and projects live in memory and behave like a real server (each role sees only its scope; only HR can change data; duplicate emails and reporting loops are rejected). A page reload resets them.
 - **Mock attendance:** about 30 days of fictional weekday attendance (some Late-In days, early departures and forgotten check-outs). Demo accounts start today without a check-in, so you can try check-in and check-out; the mock clock is your device clock, while all times are shown and classified in Pakistan time. HR can correct records with a reason.
 - **Mock leave:** every active person starts the year with 7 Medical/Sick, 7 Casual and 7 Annual days. About ten fictional requests exist: some already approved or declined, others waiting for the demo Manager, Team Lead, Associate PM, Senior PM and HR accounts, so the approval inbox has work in it. Requests, decisions and the ledger live in memory and reset on reload.
+- **Mock notifications:** leave actions notify the right people (HR always), attendance reminders appear after 9:15 AM for anyone who has not checked in, and two fictional HR announcements exist. Notifications are in-app only and reset on reload.
 - Lint blocks importing mock modules from screens or components.
 - The HTTP client (`src/services/api/`) normalizes every failure into an `ApiError`, validates responses with Zod, supports timeouts and cancellation, and has refresh-on-401 hooks. Sessions use JWT: access token in memory, refresh token in an httpOnly cookie with rotation, blacklisted on logout (wired up in Phase 2).
 - Frontend role checks are for user experience only; the backend is authoritative for authentication, permissions and business rules.
